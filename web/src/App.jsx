@@ -1,0 +1,46 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
+import AppShell from './components/layout/AppShell';
+import LoginPage from './pages/LoginPage';
+import ManagerMapPage from './pages/ManagerMapPage';
+import ManagerIssuesPage from './pages/ManagerIssuesPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminTelemetryPage from './pages/AdminTelemetryPage';
+import SettingsPage from './pages/SettingsPage';
+
+function DefaultRedirect() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'admin') return <Navigate to="/admin/users" replace />;
+  return <Navigate to="/manager/map" replace />;
+}
+
+function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<AppShell />}>
+          <Route index element={<DefaultRedirect />} />
+          <Route path="/manager/map" element={<ManagerMapPage />} />
+          <Route path="/manager/issues" element={<ManagerIssuesPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/telemetry" element={<AdminTelemetryPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <SocketProvider>
+        <AppRoutes />
+      </SocketProvider>
+    </AuthProvider>
+  );
+}

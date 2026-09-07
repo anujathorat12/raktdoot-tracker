@@ -1,0 +1,15 @@
+'use strict';
+const { Router } = require('express');
+const controller = require('./drivers.controller');
+const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
+
+const router = Router();
+
+// All driver routes require authentication
+router.use(authenticate);
+
+router.get('/', requireRole('manager', 'admin'), controller.getAllDrivers);
+router.get('/:id', requireRole('manager', 'admin', 'driver'), controller.getDriverById);
+router.put('/status', requireRole('driver', 'manager', 'admin'), controller.updateStatus);
+
+module.exports = router;
