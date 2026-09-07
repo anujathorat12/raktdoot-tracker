@@ -138,11 +138,15 @@ function initSocket(httpServer) {
     // ── DRIVER → ISSUE REPORTED (complement to REST API) ─────────────────────
     socket.on('issue_reported', (data) => {
       if (user.role !== 'driver') return;
-      io.to('fleet-monitors').emit('issue_alert', {
+      const issuePayload = {
         driver_id: user.id,
         driver_name: user.name,
         ...data,
         timestamp: new Date().toISOString(),
+      };
+      io.to('fleet-monitors').emit('issue_alert', {
+        ...issuePayload,
+        issue: issuePayload,
       });
     });
 

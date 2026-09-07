@@ -61,7 +61,8 @@ export function SocketProvider({ children }) {
       }));
     });
 
-    socket.on('issue_alert', ({ issue }) => {
+    socket.on('issue_alert', (data) => {
+      const issue = data?.issue || data;
       setIssues(prev => [issue, ...prev].slice(0, 100));
     });
 
