@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Truck, Eye, EyeOff, Zap, Lock, Mail } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, loading, error, clearError, demoAccounts } = useAuth();
+  const { user, login, loading, error, clearError, demoAccounts } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -18,6 +19,10 @@ export default function LoginPage() {
       await login(email, password);
     } catch (_) {}
   };
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
 
   const fillDemo = (acc) => {
     setEmail(acc.email);
