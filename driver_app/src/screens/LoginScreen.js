@@ -150,7 +150,7 @@ export default function LoginScreen({ onLoginSuccess }) {
             <Text style={s.centreNameMr}>जनकल्याण रक्तपेढी, पुणे</Text>
             <View style={s.pill}>
               <Text style={s.pillHeart}>❤️</Text>
-              <Text style={s.pillText}>Raktdoot Tracker</Text>
+              <Text style={s.pillText}>RAKTDOOT TRACKER</Text>
             </View>
           </View>
 
