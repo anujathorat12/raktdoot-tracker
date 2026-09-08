@@ -7,8 +7,8 @@ const { upload } = require('../../middlewares/upload.middleware');
 const router = Router();
 router.use(authenticate);
 
-router.get('/', requireRole('manager', 'admin'), controller.getAllIssues);
-router.get('/:id', requireRole('manager', 'admin'), controller.getIssueById);
+router.get('/', requireRole('manager', 'admin', 'driver'), controller.getAllIssues);
+router.get('/:id', requireRole('manager', 'admin', 'driver'), controller.getIssueById);
 router.post('/', requireRole('driver'), upload.single('image'), controller.createIssue);
 router.patch('/:id/status', requireRole('manager', 'admin'), controller.updateIssueStatus);
 

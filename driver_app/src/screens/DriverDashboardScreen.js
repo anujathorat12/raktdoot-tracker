@@ -46,6 +46,11 @@ export default function DriverDashboardScreen({
       setSocketConnected(connected);
       if (connected) {
         socketManager.emitStatusChange(driverStatus);
+        // Transmit immediate GPS location on connect
+        if (driverStatus !== 'offline') {
+          const pt = simulatorRef.current.getNextPoint();
+          transmitLocation(pt, driverStatus);
+        }
       }
     });
 
@@ -56,7 +61,7 @@ export default function DriverDashboardScreen({
       stopTracking();
       socketManager.disconnect();
     };
-  }, [serverUrl, token]);
+  }, [serverUrl, token, driverStatus, transmitLocation]);
 
   const loadIssues = async () => {
     try {
@@ -90,6 +95,10 @@ export default function DriverDashboardScreen({
     if (driverStatus === 'offline') return;
 
     if (useSimulator) {
+      // Send first telemetry point immediately!
+      const initialPoint = simulatorRef.current.getNextPoint();
+      transmitLocation(initialPoint, driverStatus);
+
       // Periodic simulated driving updates every 3 seconds
       intervalRef.current = setInterval(() => {
         const nextPoint = simulatorRef.current.getNextPoint();

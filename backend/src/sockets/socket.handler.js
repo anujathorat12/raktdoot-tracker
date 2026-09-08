@@ -56,19 +56,18 @@ function initSocket(httpServer) {
     console.log(`[Socket] ✅ Connected: ${user.name} (${user.role}) — ${socket.id}`);
 
     // ── JOIN ROOMS BASED ON ROLE ──────────────────────────────────────────────
-    if (user.role === 'manager' || user.role === 'admin') {
-      socket.join('fleet-monitors');
+    // Allow all authenticated clients (manager, admin, driver) to monitor fleet updates
+    socket.join('fleet-monitors');
 
-      // Send complete fleet state to the new watcher
-      const fleetState = getAllDriversWithLocations();
-      socket.emit('initial_fleet_state', {
-        drivers: fleetState,
-        telemetry: {
-          connectedClients: io.sockets.sockets.size,
-          locationUpdatesProcessed: telemetry.locationUpdatesProcessed,
-        },
-      });
-    }
+    // Send complete fleet state to the new watcher
+    const fleetState = getAllDriversWithLocations();
+    socket.emit('initial_fleet_state', {
+      drivers: fleetState,
+      telemetry: {
+        connectedClients: io.sockets.sockets.size,
+        locationUpdatesProcessed: telemetry.locationUpdatesProcessed,
+      },
+    });
 
     if (user.role === 'driver') {
       socket.join(`driver:${user.id}`);

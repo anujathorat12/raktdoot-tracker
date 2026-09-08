@@ -1,15 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Map as MapIcon, Users, Maximize2 } from 'lucide-react';
 import FleetMap from '../components/map/FleetMap';
 import DriverList from '../components/manager/DriverList';
 import DriverDetailsDrawer from '../components/manager/DriverDetailsDrawer';
 import DriverSimulatorModal from '../components/simulator/DriverSimulatorModal';
 import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ManagerMapPage() {
+  const { user } = useAuth();
   const [selectedDriverId, setSelectedDriverId] = useState(null);
   const [showSimulator, setShowSimulator] = useState(false);
   const { fleetDriversList } = useSocket();
+
+  // If driver logs in, auto-target their own vehicle
+  useEffect(() => {
+    if (user?.role === 'driver' && !selectedDriverId) {
+      setSelectedDriverId(user.id);
+    }
+  }, [user]);
 
   const activeCount = fleetDriversList.filter(d => d.status === 'active').length;
   const issueCount = fleetDriversList.filter(d => d.status === 'issue').length;
