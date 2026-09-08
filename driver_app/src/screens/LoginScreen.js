@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView,
-  Platform, ScrollView
+  Platform, ScrollView, Image
 } from 'react-native';
 import { DEFAULT_SERVER_URL, PRESET_SERVER_URLS, DEMO_CREDENTIALS } from '../config/constants';
 import { loginDriver, storeAuth, storeServerUrl, getStoredServerUrl } from '../services/api';
@@ -12,6 +12,7 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [password, setPassword] = useState(DEMO_CREDENTIALS.password);
   const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER_URL);
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
   const [showServerConfig, setShowServerConfig] = useState(false);
 
   useEffect(() => {
@@ -58,41 +59,84 @@ export default function LoginScreen({ onLoginSuccess }) {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Brand Header */}
-        <View style={styles.brandContainer}>
-          <View style={styles.iconCircle}>
-            <Text style={{ fontSize: 36 }}>🚚</Text>
-          </View>
-          <Text style={styles.brandTitle}>Raktdoot Driver</Text>
-          <Text style={styles.brandSubtitle}>Real-Time Fleet & Dispatch Portal</Text>
+
+        {/* Top Header Bar: Harbinger Logo */}
+        <View style={styles.topHeader}>
+          <Image
+            source={require('../../assets/harbinger_logo.png')}
+            style={styles.harbingerLogo}
+            resizeMode="contain"
+          />
         </View>
 
-        {/* Form Card */}
+        {/* Brand Section */}
+        <View style={styles.brandContainer}>
+          {/* Jankalyan Badges Row */}
+          <View style={styles.badgesRow}>
+            {/* Om Blood Drop Badge */}
+            <View style={styles.omBadgeCircle}>
+              <Text style={styles.omSymbolText}>ॐ</Text>
+            </View>
+
+            {/* NABH Accredited Badge */}
+            <View style={styles.nabhBadgeCircle}>
+              <Text style={styles.nabhTextTop}>NABH</text>
+              <Text style={styles.nabhCheck}>✓</Text>
+              <Text style={styles.nabhTextBottom}>ACCREDITED</Text>
+            </View>
+          </View>
+
+          {/* Title & Tag */}
+          <Text style={styles.centreTitle}>Jankalyan Blood Centre, Pune</Text>
+          <View style={styles.tagPill}>
+            <Text style={styles.tagText}>❤️ Raktdoot Driver Portal</Text>
+          </View>
+          <Text style={styles.heroSub}>
+            Real-Time Cold-Chain Tracking & Emergency Dispatch
+          </Text>
+        </View>
+
+        {/* Mobile Form Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Driver Sign In</Text>
+          <Text style={styles.cardSubtitle}>
+            Enter credentials to go online & start location tracking
+          </Text>
 
-          {/* Email */}
-          <Text style={styles.label}>Email Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. driver1@delivery.com"
-            placeholderTextColor="#64748b"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+          {/* Email / Driver ID */}
+          <Text style={styles.label}>EMAIL ADDRESS / DRIVER ID</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputIcon}>✉️</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. driver1@delivery.com"
+              placeholderTextColor="#64748b"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
 
           {/* Password */}
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter password"
-            placeholderTextColor="#64748b"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <Text style={styles.label}>PASSWORD</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputIcon}>🔒</Text>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="Enter password"
+              placeholderTextColor="#64748b"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPass}
+            />
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setShowPass(!showPass)}
+            >
+              <Text style={{ fontSize: 16 }}>{showPass ? '👁️' : '🙈'}</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Server Config Toggle */}
           <TouchableOpacity
@@ -100,13 +144,13 @@ export default function LoginScreen({ onLoginSuccess }) {
             onPress={() => setShowServerConfig(!showServerConfig)}
           >
             <Text style={styles.serverToggleText}>
-              ⚙️ Server URL: <Text style={{ color: '#818cf8' }}>{serverUrl}</Text>
+              ⚙️ Server Endpoint: <Text style={{ color: '#fca5a5', fontWeight: '700' }}>{serverUrl}</Text>
             </Text>
           </TouchableOpacity>
 
           {showServerConfig && (
             <View style={styles.serverConfigBox}>
-              <Text style={styles.serverConfigTitle}>API Server Endpoint</Text>
+              <Text style={styles.serverConfigTitle}>API Server URL</Text>
               <TextInput
                 style={styles.serverInput}
                 value={serverUrl}
@@ -140,7 +184,7 @@ export default function LoginScreen({ onLoginSuccess }) {
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.loginBtnText}>Sign In & Go Online</Text>
+              <Text style={styles.loginBtnText}>⚡ Sign In & Go Online</Text>
             )}
           </TouchableOpacity>
 
@@ -150,9 +194,12 @@ export default function LoginScreen({ onLoginSuccess }) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footerNote}>
-          Backend API status: Connects to Express + Socket.IO v4
-        </Text>
+        {/* Global Application Footer */}
+        <View style={styles.footerBar}>
+          <Text style={styles.footerText}>
+            © 2026 Jankalyan Blood Centre, Pune | Powered by Harbinger Systems Pvt. Ltd.
+          </Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -161,81 +208,170 @@ export default function LoginScreen({ onLoginSuccess }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0b10',
+    backgroundColor: '#090507',
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-    paddingVertical: 40,
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingTop: 16,
+    paddingBottom: 10,
+  },
+  topHeader: {
+    alignItems: 'flex-end',
+    marginBottom: 10,
+  },
+  harbingerLogo: {
+    height: 38,
+    width: 140,
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 20,
   },
-  iconCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
-    borderWidth: 2,
-    borderColor: '#6366f1',
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 12,
+  },
+  omBadgeCircle: {
+    width: 56,
+    height: 64,
+    borderRadius: 28,
+    backgroundColor: '#ee2a35',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    shadowColor: '#6366f1',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
+    shadowColor: '#ee2a35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
     elevation: 8,
   },
-  brandTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#f8fafc',
-    letterSpacing: 0.5,
+  omSymbolText: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '900',
   },
-  brandSubtitle: {
-    fontSize: 13,
-    color: '#94a3b8',
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: '#161822',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 20,
+  nabhBadgeCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0b4f9c',
+    borderWidth: 2,
+    borderColor: '#d92626',
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
     elevation: 6,
   },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#f1f5f9',
-    marginBottom: 16,
+  nabhTextTop: {
+    color: '#ffffff',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#cbd5e1',
+  nabhCheck: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '900',
+    marginVertical: -2,
+  },
+  nabhTextBottom: {
+    color: '#ffffff',
+    fontSize: 5.5,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  centreTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    letterSpacing: -0.2,
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: '#0f111a',
+  tagPill: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  tagText: {
+    color: '#f87171',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  heroSub: {
+    fontSize: 12,
+    color: '#94a3b8',
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: '#0f111a',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#dc2626',
+    padding: 20,
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 11.5,
+    color: '#94a3b8',
+    textAlign: 'center',
+    marginBottom: 18,
+  },
+  label: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#cbd5e1',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f1fd',
     borderRadius: 10,
-    padding: 12,
-    color: '#f8fafc',
-    fontSize: 14,
+    paddingHorizontal: 12,
+    height: 44,
     marginBottom: 14,
   },
+  inputIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#0f172a',
+    paddingVertical: 0,
+  },
+  eyeBtn: {
+    padding: 4,
+  },
   serverToggle: {
-    paddingVertical: 6,
+    paddingVertical: 4,
     marginBottom: 12,
   },
   serverToggleText: {
@@ -243,17 +379,17 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   serverConfigBox: {
-    backgroundColor: '#0f111a',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     borderRadius: 10,
     padding: 10,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   serverConfigTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#c7d2fe',
+    color: '#fca5a5',
     marginBottom: 6,
   },
   serverInput: {
@@ -277,53 +413,60 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   presetBtnActive: {
-    backgroundColor: 'rgba(99, 102, 241, 0.25)',
+    backgroundColor: 'rgba(239, 68, 68, 0.25)',
     borderWidth: 1,
-    borderColor: '#6366f1',
+    borderColor: '#dc2626',
   },
   presetText: {
     fontSize: 10.5,
     color: '#94a3b8',
   },
   presetTextActive: {
-    color: '#c7d2fe',
+    color: '#fca5a5',
     fontWeight: '700',
   },
   loginBtn: {
-    backgroundColor: '#6366f1',
-    borderRadius: 12,
-    paddingVertical: 14,
+    backgroundColor: '#dc2626',
+    borderRadius: 10,
+    height: 46,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 6,
-    shadowColor: '#6366f1',
+    shadowColor: '#dc2626',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.5,
     shadowRadius: 10,
-    elevation: 4,
+    elevation: 6,
   },
   loginBtnText: {
-    color: 'white',
+    color: '#ffffff',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   demoBtn: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    paddingVertical: 11,
+    borderRadius: 10,
+    paddingVertical: 10,
     alignItems: 'center',
     marginTop: 10,
   },
   demoBtnText: {
-    color: '#a5b4fc',
-    fontSize: 12,
+    color: '#fca5a5',
+    fontSize: 11.5,
     fontWeight: '600',
   },
-  footerNote: {
+  footerBar: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 12,
+    alignItems: 'center',
+  },
+  footerText: {
     textAlign: 'center',
     fontSize: 11,
-    color: '#64748b',
-    marginTop: 20,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
   },
 });
