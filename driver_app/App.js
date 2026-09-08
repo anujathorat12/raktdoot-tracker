@@ -1,10 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState, useEffect, Component } from 'react';
+import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { DEFAULT_SERVER_URL } from './src/config/constants';
 import { getStoredAuth, getStoredServerUrl, clearAuth } from './src/services/api';
 import LoginScreen from './src/screens/LoginScreen';
 import DriverDashboardScreen from './src/screens/DriverDashboardScreen';
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('App ErrorBoundary caught error:', error, errorInfo);
+  }
+
+  handleReset = async () => {
+    await clearAuth();
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={{ fontSize: 36, marginBottom: 12 }}>⚠️</Text>
+          <Text style={styles.errorTitle}>Something went wrong</Text>
+          <Text style={styles.errorText}>
+            {this.state.error?.message || 'An unexpected error occurred.'}
+          </Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={this.handleReset}>
+            <Text style={styles.retryText}>Reload & Return to Login</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -50,19 +88,21 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      {auth ? (
-        <DriverDashboardScreen
-          user={auth.user}
-          token={auth.token}
-          serverUrl={serverUrl}
-          onLogout={handleLogout}
-        />
-      ) : (
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
-      )}
-    </View>
+    <ErrorBoundary>
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        {auth ? (
+          <DriverDashboardScreen
+            user={auth.user}
+            token={auth.token}
+            serverUrl={serverUrl}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        )}
+      </View>
+    </ErrorBoundary>
   );
 }
 
@@ -76,5 +116,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0b10',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#0a0b10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  errorTitle: {
+    color: '#f8fafc',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  errorText: {
+    color: '#94a3b8',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryBtn: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

@@ -40,37 +40,19 @@ export default function DriverDashboardScreen({
   const locationSubRef = useRef(null);
   const intervalRef = useRef(null);
 
-  // Connect WebSocket on mount
-  useEffect(() => {
-    socketManager.connect(serverUrl, token, (connected) => {
-      setSocketConnected(connected);
-      if (connected) {
-        socketManager.emitStatusChange(driverStatus);
-        // Transmit immediate GPS location on connect
-        if (driverStatus !== 'offline') {
-          const pt = simulatorRef.current.getNextPoint();
-          transmitLocation(pt, driverStatus);
-        }
-      }
-    });
+  // ── Helper: Stop tracking ──
+  const stopTracking = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (locationSubRef.current) {
+      locationSubRef.current.remove();
+      locationSubRef.current = null;
+    }
+  }, []);
 
-    // Fetch past issues
-    loadIssues();
-
-    return () => {
-      stopTracking();
-      socketManager.disconnect();
-    };
-  }, [serverUrl, token, driverStatus, transmitLocation]);
-
-  const loadIssues = async () => {
-    try {
-      const data = await getDriverIssues(serverUrl, token);
-      setIssuesHistory(data);
-    } catch (_) {}
-  };
-
-  // Transmit location packet to backend
+  // ── Helper: Transmit location packet to backend ──
   const transmitLocation = useCallback((locationData, status) => {
     const payload = {
       lat: locationData.lat,
@@ -88,7 +70,7 @@ export default function DriverDashboardScreen({
     socketManager.emitLocationUpdate(payload);
   }, [driverStatus]);
 
-  // Start location tracking (Simulator or Real GPS)
+  // ── Helper: Start location tracking (Simulator or Real GPS) ──
   const startTracking = useCallback(() => {
     stopTracking();
 
@@ -141,20 +123,39 @@ export default function DriverDashboardScreen({
         }
       })();
     }
-  }, [driverStatus, useSimulator, transmitLocation]);
+  }, [driverStatus, useSimulator, transmitLocation, stopTracking]);
 
-  const stopTracking = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (locationSubRef.current) {
-      locationSubRef.current.remove();
-      locationSubRef.current = null;
-    }
-  };
+  // ── Helper: Load issues from REST API ──
+  const loadIssues = useCallback(async () => {
+    try {
+      const data = await getDriverIssues(serverUrl, token);
+      setIssuesHistory(data);
+    } catch (_) {}
+  }, [serverUrl, token]);
 
-  // Restart tracking when status or tracking mode changes
+  // ── Effect 1: Connect WebSocket on mount ──
+  useEffect(() => {
+    socketManager.connect(serverUrl, token, (connected) => {
+      setSocketConnected(connected);
+      if (connected) {
+        socketManager.emitStatusChange(driverStatus);
+        // Transmit immediate GPS location on connect
+        if (driverStatus !== 'offline') {
+          const pt = simulatorRef.current.getNextPoint();
+          transmitLocation(pt, driverStatus);
+        }
+      }
+    });
+
+    loadIssues();
+
+    return () => {
+      stopTracking();
+      socketManager.disconnect();
+    };
+  }, [serverUrl, token, driverStatus, transmitLocation, stopTracking, loadIssues]);
+
+  // ── Effect 2: Restart tracking when status or simulator mode changes ──
   useEffect(() => {
     if (driverStatus !== 'offline') {
       startTracking();
@@ -162,7 +163,7 @@ export default function DriverDashboardScreen({
       stopTracking();
     }
     return () => stopTracking();
-  }, [driverStatus, useSimulator, startTracking]);
+  }, [driverStatus, useSimulator, startTracking, stopTracking]);
 
   // Handle Shift Status Changes
   const handleStatusChange = (newStatus) => {
