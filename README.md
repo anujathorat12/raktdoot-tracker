@@ -10,8 +10,7 @@ A **zero-cost, enterprise-grade** fleet management platform with live GPS tracki
 delivery_tracking_system/
 ├── backend/          # Node.js + Express + Socket.io + SQLite (WASM)
 ├── web/              # React 19 + Vite + Leaflet (OSM) + Socket.io
-├── driver_app/       # React Native / Expo Driver Android App
-└── driver_apk/       # Flutter Android App alternative
+└── driver_app/       # React Native / Expo Driver App (Android, iOS & Web)
 ```
 
 ---
