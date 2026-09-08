@@ -10,7 +10,8 @@ A **zero-cost, enterprise-grade** fleet management platform with live GPS tracki
 delivery_tracking_system/
 ├── backend/          # Node.js + Express + Socket.io + SQLite (WASM)
 ├── web/              # React 19 + Vite + Leaflet (OSM) + Socket.io
-└── driver_apk/       # Flutter Android (GPS + Camera + Socket.io)
+├── driver_app/       # React Native / Expo Driver Android App
+└── driver_apk/       # Flutter Android App alternative
 ```
 
 ---
@@ -34,16 +35,17 @@ npm install
 npm run dev             # Starts on http://localhost:5173
 ```
 
-### 3. Flutter Driver APK
+### 3. React Native Driver App (Expo)
 
 ```bash
-cd driver_apk
-flutter pub get
-flutter run             # Run on emulator or physical device
+cd driver_app
+npm install
+npx expo start          # Run on physical phone via Expo Go or Android Emulator
 ```
 
-> **Android Emulator**: Backend URL is `http://10.0.2.2:5000` (already configured)
-> **Physical Device**: Change `baseUrl` in `lib/core/services/api_client.dart` to your LAN IP
+> **Testing on Physical Phone**: Scan the QR code displayed in the terminal with the **Expo Go** app. Select `Wi-Fi (10.60.1.53)` on the login screen.
+> **Testing on Android Emulator**: Press `a` in the Expo terminal. Select `Android Emulator (10.0.2.2)` on the login screen.
+> **Build Standalone APK**: Run `npx eas build -p android --profile preview` or `./gradlew assembleRelease`.
 
 ---
 

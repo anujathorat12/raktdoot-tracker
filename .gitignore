@@ -16,3 +16,6 @@ build/
 *.ipr
 *.sqlite
 *.db
+
+delivery_tracking_system.zip
+*.zip

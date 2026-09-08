@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Raktdoot Driver",
+    "slug": "raktdoot-driver",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0a0b10"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.harbinger.raktdoot.driver",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Raktdoot Driver requires GPS access to stream live delivery vehicle locations to dispatchers."
+      }
+    },
+    "android": {
+      "package": "com.harbinger.raktdoot.driver",
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0b10",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

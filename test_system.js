@@ -314,6 +314,63 @@ async function runTests() {
   }
 
   // ─────────────────────────────────────────
+  // 7. REACT NATIVE DELIVERY DRIVER APP
+  // ─────────────────────────────────────────
+  console.log('\n📱 TEST SUITE 7: React Native Delivery Driver App');
+  try {
+    const appDir = path.resolve(__dirname, 'driver_app');
+    assert(fs.existsSync(appDir), 'driver_app directory exists');
+
+    // Key file structure checks
+    const expectedFiles = [
+      'package.json',
+      'app.json',
+      'App.js',
+      'src/config/constants.js',
+      'src/services/api.js',
+      'src/services/socket.js',
+      'src/services/locationSimulator.js',
+      'src/screens/LoginScreen.js',
+      'src/screens/DriverDashboardScreen.js',
+      'src/components/ReportIssueModal.js',
+      'src/components/IssuesHistoryModal.js',
+    ];
+
+    for (const file of expectedFiles) {
+      const fullPath = path.join(appDir, file);
+      assert(fs.existsSync(fullPath), `Driver App file exists: ${file}`);
+    }
+
+    // App.json permissions & package ID check
+    const appJson = JSON.parse(fs.readFileSync(path.join(appDir, 'app.json'), 'utf8'));
+    assert(appJson.expo?.name === 'Raktdoot Driver', 'App name configured as "Raktdoot Driver"');
+    assert(appJson.expo?.android?.package === 'com.harbinger.raktdoot.driver', 'Android package name is "com.harbinger.raktdoot.driver"');
+    const perms = appJson.expo?.android?.permissions || [];
+    assert(perms.includes('ACCESS_FINE_LOCATION'), 'Android permissions include ACCESS_FINE_LOCATION');
+    assert(perms.includes('FOREGROUND_SERVICE'), 'Android permissions include FOREGROUND_SERVICE');
+
+    // Package.json dependencies check
+    const pkgJson = JSON.parse(fs.readFileSync(path.join(appDir, 'package.json'), 'utf8'));
+    const deps = pkgJson.dependencies || {};
+    assert(!!deps['socket.io-client'], 'driver_app has socket.io-client installed');
+    assert(!!deps['expo-location'], 'driver_app has expo-location installed');
+    assert(!!deps['@react-native-async-storage/async-storage'], 'driver_app has @react-native-async-storage/async-storage installed');
+
+    // Location Simulator Telemetry check
+    const { LocationSimulator } = require('./driver_app/src/services/locationSimulator');
+    const sim = new LocationSimulator();
+    const pt1 = sim.getNextPoint();
+    const pt2 = sim.getNextPoint();
+    assert(typeof pt1.lat === 'number' && typeof pt1.lng === 'number', 'LocationSimulator outputs numeric coordinates');
+    assert(pt1.lat > 18 && pt1.lat < 20 && pt1.lng > 72 && pt1.lng < 74, 'Coordinates fall inside Mumbai delivery zone');
+    assert(typeof pt1.speed === 'number' && pt1.speed >= 0, `Speed calculated properly (${pt1.speed} km/h)`);
+    assert(typeof pt1.heading === 'number' && pt1.heading >= 0 && pt1.heading <= 360, `Bearing calculated properly (${pt1.heading}°)`);
+    assert(pt1.address && pt1.address.includes('➔'), `Waypoint routing description valid: ${pt1.address}`);
+  } catch (err) {
+    assert(false, `React Native App tests failed: ${err.message}`);
+  }
+
+  // ─────────────────────────────────────────
   // SUMMARY
   // ─────────────────────────────────────────
   console.log('\n======================================================');
@@ -324,3 +381,4 @@ async function runTests() {
 }
 
 runTests();
+
