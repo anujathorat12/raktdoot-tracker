@@ -43,8 +43,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// ─── STATIC: UPLOADED ISSUE PHOTOS ───────────────────────────────────────────
+// ─── STATIC: UPLOADED ISSUE PHOTOS & DRIVER WEB APP ─────────────────────────
 app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
+app.use('/driver', express.static(path.resolve(__dirname, 'public/driver')));
+app.use('/_expo', express.static(path.resolve(__dirname, 'public/driver/_expo')));
+app.get(['/driver', '/driver/*'], (_req, res) => {
+  res.sendFile(path.resolve(__dirname, 'public/driver/index.html'));
+});
+
+// Download Driver App Zip
+app.get(['/download/driver-app', '/download-driver-app'], (_req, res) => {
+  const zipPath = path.resolve(__dirname, 'public/downloads/raktdoot-driver-app.zip');
+  res.download(zipPath, 'raktdoot-driver-app.zip');
+});
 
 // ─── ROOT & HEALTH CHECK ───────────────────────────────────────────────────────
 app.get('/', (_req, res) => {

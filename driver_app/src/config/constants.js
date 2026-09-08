@@ -1,13 +1,10 @@
 import { Platform } from 'react-native';
 
 // Default backend URL based on platform
-export const DEFAULT_SERVER_URL = Platform.select({
-  android: 'http://10.0.2.2:5000', // Standard Android emulator loopback to host
-  ios: 'http://localhost:5000',
-  default: 'http://localhost:5000',
-});
+export const DEFAULT_SERVER_URL = 'https://raktdoot-backend.onrender.com';
 
 export const PRESET_SERVER_URLS = [
+  { label: 'Cloud Live (Render)', url: 'https://raktdoot-backend.onrender.com' },
   { label: 'Localhost (5000)', url: 'http://localhost:5000' },
   { label: 'Android Emulator (10.0.2.2)', url: 'http://10.0.2.2:5000' },
   { label: 'Wi-Fi Network (10.60.1.53)', url: 'http://10.60.1.53:5000' },

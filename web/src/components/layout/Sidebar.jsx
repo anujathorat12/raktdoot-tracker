@@ -1,7 +1,8 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Map, Users, AlertTriangle, BarChart3,
-  Settings, LogOut, Wifi, WifiOff, Shield, Truck
+  Settings, LogOut, Wifi, WifiOff, Shield, Truck,
+  Smartphone, Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
@@ -74,6 +75,30 @@ export default function Sidebar() {
             {adminNav.map(n => <NavItem key={n.to} {...n} />)}
           </>
         )}
+
+        <div style={{ marginTop: 'var(--space-3)' }}>
+          <div className="nav-section-label">Mobile App</div>
+          <a
+            href="https://raktdoot-backend.onrender.com/driver"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="nav-item"
+            id="nav-driver-mobile-app"
+            title="Open Driver Mobile App on Phone"
+          >
+            <Smartphone size={16} className="nav-icon" style={{ color: '#10b981' }} />
+            <span>Driver App (Live)</span>
+          </a>
+          <a
+            href="https://raktdoot-backend.onrender.com/download/driver-app"
+            className="nav-item"
+            id="nav-download-driver-zip"
+            title="Download Driver App Source ZIP"
+          >
+            <Download size={16} className="nav-icon" style={{ color: '#3b82f6' }} />
+            <span>Download ZIP</span>
+          </a>
+        </div>
 
         <div style={{ marginTop: 'var(--space-3)' }}>
           <div className="nav-section-label">System</div>
