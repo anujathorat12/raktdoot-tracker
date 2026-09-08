@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, Navigation, Clock, Zap, AlertTriangle } from 'lucide-react';
+import { Search, Navigation, Clock, Zap, AlertTriangle, MapPin } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
 import { formatDistanceToNow } from 'date-fns';
+import { getDisplayAddress } from '../../utils/geoAddress';
 
 const STATUS_COLORS = {
   active: 'var(--status-active)',
@@ -44,6 +45,12 @@ function DriverItem({ driver, selected, onClick }) {
               <span style={{ fontFamily: 'var(--font-mono)' }}>{Math.round(driver.speed)} km/h</span>
             </>
           )}
+        </div>
+        <div className="driver-item-meta" style={{ marginTop: 2, color: '#818cf8', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <MapPin size={10} style={{ flexShrink: 0, color: '#818cf8' }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {getDisplayAddress(driver)}
+          </span>
         </div>
         <div className="driver-item-meta" style={{ marginTop: 2 }}>
           <Clock size={10} />

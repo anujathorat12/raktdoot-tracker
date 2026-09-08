@@ -93,7 +93,7 @@ export function SocketProvider({ children }) {
             speed: update.speed != null ? update.speed : (existing.speed || 0),
             heading: update.heading != null ? update.heading : (existing.heading || 0),
             status: update.status || existing.status || 'active',
-            address: update.address !== undefined ? update.address : existing.address,
+            address: (update.address && update.address.trim() !== '') ? update.address : existing.address,
             updated_at: update.updated_at || new Date().toISOString(),
             trail: updatedTrail,
             lastMovedTime: Date.now(),

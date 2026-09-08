@@ -77,13 +77,13 @@ const users = [
   },
 ];
 
-// Demo initial locations across Mumbai
+// Demo initial locations across Pune with exact physical addresses
 const initialLocations = [
-  { driver_id: 'user-drv-001', lat: 19.0760, lng: 72.8777, speed: 42, heading: 90,  status: 'active' },
-  { driver_id: 'user-drv-002', lat: 19.0830, lng: 72.8830, speed: 28, heading: 180, status: 'active' },
-  { driver_id: 'user-drv-003', lat: 19.0650, lng: 72.8700, speed: 0,  heading: 0,   status: 'idle'   },
-  { driver_id: 'user-drv-004', lat: 19.0900, lng: 72.8900, speed: 55, heading: 270, status: 'active' },
-  { driver_id: 'user-drv-005', lat: 19.0700, lng: 72.8850, speed: 0,  heading: 45,  status: 'issue'  },
+  { driver_id: 'user-drv-001', lat: 18.54414, lng: 73.79346, speed: 2,  heading: 239, status: 'active', address: 'Pashan, Pune, Maharashtra' },
+  { driver_id: 'user-drv-002', lat: 18.5080,  lng: 73.8050,  speed: 28, heading: 180, status: 'active', address: 'Kothrud, Pune, Maharashtra' },
+  { driver_id: 'user-drv-003', lat: 18.5204,  lng: 73.8567,  speed: 0,  heading: 0,   status: 'idle',   address: 'Shivajinagar, Pune, Maharashtra' },
+  { driver_id: 'user-drv-004', lat: 18.5590,  lng: 73.7868,  speed: 55, heading: 270, status: 'active', address: 'Baner, Pune, Maharashtra' },
+  { driver_id: 'user-drv-005', lat: 18.5580,  lng: 73.8070,  speed: 0,  heading: 45,  status: 'issue',  address: 'Aundh, Pune, Maharashtra' },
 ];
 
 async function seedDatabase(force = false) {
@@ -115,13 +115,13 @@ async function seedDatabase(force = false) {
   console.log('📍 Seeding driver locations...');
   for (const loc of initialLocations) {
     dbRun(
-      `INSERT INTO driver_locations (driver_id, lat, lng, speed, heading, status)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO driver_locations (driver_id, lat, lng, speed, heading, status, address)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(driver_id) DO UPDATE SET
          lat=excluded.lat, lng=excluded.lng,
          speed=excluded.speed, heading=excluded.heading,
-         status=excluded.status, updated_at=datetime('now')`,
-      [loc.driver_id, loc.lat, loc.lng, loc.speed, loc.heading, loc.status]
+         status=excluded.status, address=excluded.address, updated_at=datetime('now')`,
+      [loc.driver_id, loc.lat, loc.lng, loc.speed, loc.heading, loc.status, loc.address]
     );
   }
 

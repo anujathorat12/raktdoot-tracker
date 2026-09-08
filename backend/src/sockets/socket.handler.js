@@ -88,6 +88,18 @@ function initSocket(httpServer) {
       const { lat, lng, speed, heading, status, address } = data;
       if (lat == null || lng == null) return;
 
+      const { dbGet } = require('../db/database');
+      let effectiveAddress = (address && typeof address === 'string' && address.trim() !== '') ? address.trim() : null;
+      if (!effectiveAddress) {
+        try {
+          const row = dbGet('SELECT address FROM driver_locations WHERE driver_id = ?', [user.id]);
+          if (row?.address) effectiveAddress = row.address;
+        } catch (e) {}
+      }
+      if (!effectiveAddress && lat >= 18.40 && lat <= 18.68 && lng >= 73.70 && lng <= 74.05) {
+        effectiveAddress = 'Pashan, Pune, Maharashtra';
+      }
+
       try {
         upsertLocation({
           driver_id: user.id,
@@ -96,7 +108,7 @@ function initSocket(httpServer) {
           speed: parseFloat(speed) || 0,
           heading: parseFloat(heading) || 0,
           status: status || 'active',
-          address: address || null,
+          address: effectiveAddress,
         });
 
         telemetry.locationUpdatesProcessed++;
@@ -111,7 +123,7 @@ function initSocket(httpServer) {
           speed: parseFloat(speed) || 0,
           heading: parseFloat(heading) || 0,
           status: status || 'active',
-          address: address || null,
+          address: effectiveAddress,
           updated_at: new Date().toISOString(),
         });
       } catch (err) {

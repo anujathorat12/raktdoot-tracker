@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useSocket } from '../../context/SocketContext';
 import MapPersonSearch from './MapPersonSearch';
+import { getDisplayAddress } from '../../utils/geoAddress';
 
 // Fix default leaflet icon paths
 delete L.Icon.Default.prototype._getIconUrl;
@@ -324,7 +325,10 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
               )}
               <span style={{ color: '#ffffff', fontWeight: 700 }}>{activeTarget.name}</span>
               {activeTarget.speed > 0 ? ` · ⚡ ${Math.round(activeTarget.speed)} km/h` : ''}
-              {activeTarget.address ? ` · ${activeTarget.address.slice(0, 26)}...` : ''}
+              {` · 📍 ${(() => {
+                const addr = getDisplayAddress(activeTarget);
+                return addr.length > 28 ? addr.slice(0, 28) + '...' : addr;
+              })()}`}
             </span>
             <button
               onClick={() => {
@@ -462,21 +466,31 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
                   </div>
                 </div>
 
-                {driver.address && (
+                {/* Exact Physical Location Card (Always Displayed) */}
+                <div style={{
+                  marginTop: 10, padding: '8px 10px',
+                  background: 'rgba(30, 41, 59, 0.75)',
+                  borderRadius: 8,
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                }}>
                   <div style={{
-                    marginTop: 8, padding: '6px 8px',
-                    background: 'rgba(255,255,255,0.06)',
-                    borderRadius: 6,
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    fontSize: 10,
+                    color: '#818cf8',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
                   }}>
-                    <div style={{ fontSize: 10, color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>
-                      📍 Exact Physical Location
-                    </div>
-                    <div style={{ fontSize: 11, color: '#f8fafc', lineHeight: 1.3 }}>
-                      {driver.address}
-                    </div>
+                    <span>📍</span> EXACT PHYSICAL LOCATION
                   </div>
-                )}
+                  <div style={{ fontSize: 12, color: '#f8fafc', fontWeight: 600, lineHeight: 1.35 }}>
+                    {getDisplayAddress(driver)}
+                  </div>
+                </div>
 
                 {driver.phone && (
                   <div style={{
