@@ -59,25 +59,47 @@ export function SocketProvider({ children }) {
     // ── Manager / Admin events ──
     socket.on('initial_fleet_state', ({ drivers }) => {
       const map = {};
-      drivers.forEach(d => { map[d.id] = d; });
+      drivers.forEach(d => {
+        map[d.id] = {
+          ...d,
+          trail: d.lat && d.lng ? [[d.lat, d.lng]] : [],
+          lastMovedTime: new Date(d.updated_at || 0).getTime(),
+        };
+      });
       setFleetDrivers(prev => ({ ...prev, ...map }));
     });
 
     socket.on('fleet_update', (update) => {
-      setFleetDrivers(prev => ({
-        ...prev,
-        [update.driver_id]: {
-          ...(prev[update.driver_id] || {}),
-          id: update.driver_id,
-          name: update.driver_name,
-          avatar_color: update.avatar_color,
-          lat: update.lat, lng: update.lng,
-          speed: update.speed, heading: update.heading,
-          status: update.status,
-          address: update.address !== undefined ? update.address : prev[update.driver_id]?.address,
-          updated_at: update.updated_at,
-        },
-      }));
+      setFleetDrivers(prev => {
+        const existing = prev[update.driver_id] || {};
+        const oldTrail = existing.trail || (existing.lat && existing.lng ? [[existing.lat, existing.lng]] : []);
+        const newPoint = [update.lat, update.lng];
+
+        let updatedTrail = oldTrail;
+        const lastPoint = oldTrail[oldTrail.length - 1];
+        if (!lastPoint || Math.abs(lastPoint[0] - newPoint[0]) > 0.00002 || Math.abs(lastPoint[1] - newPoint[1]) > 0.00002) {
+          updatedTrail = [...oldTrail, newPoint].slice(-100);
+        }
+
+        return {
+          ...prev,
+          [update.driver_id]: {
+            ...existing,
+            id: update.driver_id,
+            name: update.driver_name || existing.name,
+            avatar_color: update.avatar_color || existing.avatar_color,
+            lat: update.lat,
+            lng: update.lng,
+            speed: update.speed != null ? update.speed : (existing.speed || 0),
+            heading: update.heading != null ? update.heading : (existing.heading || 0),
+            status: update.status || existing.status || 'active',
+            address: update.address !== undefined ? update.address : existing.address,
+            updated_at: update.updated_at || new Date().toISOString(),
+            trail: updatedTrail,
+            lastMovedTime: Date.now(),
+          },
+        };
+      });
     });
 
     socket.on('driver_status_changed', (data) => {

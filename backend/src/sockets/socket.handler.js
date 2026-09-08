@@ -83,7 +83,7 @@ function initSocket(httpServer) {
 
     // ── DRIVER → GPS LOCATION UPDATE ─────────────────────────────────────────
     socket.on('location_update', (data) => {
-      if (user.role !== 'driver') return;
+      if (user.role !== 'driver' && user.role !== 'manager' && user.role !== 'admin') return;
 
       const { lat, lng, speed, heading, status, address } = data;
       if (lat == null || lng == null) return;
