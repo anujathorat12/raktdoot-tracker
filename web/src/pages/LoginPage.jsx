@@ -262,6 +262,98 @@ export default function LoginPage() {
                   </span>
                 )}
               </button>
+
+              {/* Quick Demo Credentials Buttons */}
+              <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px', textAlign: 'center', fontWeight: 600 }}>
+                  {t.quickDemo}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      color: '#fca5a5',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '2px',
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => {
+                      setEmail('manager@delivery.com');
+                      setPassword('manager123');
+                      clearError();
+                      setLocalErr('');
+                    }}
+                  >
+                    <span>Manager</span>
+                    <span style={{ fontSize: '10px', opacity: 0.8, color: '#f87171' }}>Pune Hub</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(59, 130, 246, 0.35)',
+                      background: 'rgba(59, 130, 246, 0.12)',
+                      color: '#93c5fd',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '2px',
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => {
+                      setEmail('admin@delivery.com');
+                      setPassword('admin123');
+                      clearError();
+                      setLocalErr('');
+                    }}
+                  >
+                    <span>Admin</span>
+                    <span style={{ fontSize: '10px', opacity: 0.8, color: '#60a5fa' }}>System</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      color: '#6ee7b7',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '2px',
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => {
+                      setEmail('driver1@delivery.com');
+                      setPassword('driver123');
+                      clearError();
+                      setLocalErr('');
+                    }}
+                  >
+                    <span>Driver 1</span>
+                    <span style={{ fontSize: '10px', opacity: 0.8, color: '#34d399' }}>Ravi K.</span>
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </section>

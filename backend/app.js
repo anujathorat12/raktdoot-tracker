@@ -61,6 +61,25 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'raktdoot-tracking-api' });
 });
 
+// ─── MANUAL / AUTOMATIC SEED TRIGGER ─────────────────────────────────────────
+const { seedDatabase } = require('./src/db/seed');
+app.all('/api/seed', async (_req, res) => {
+  try {
+    await seedDatabase(true);
+    res.json({
+      success: true,
+      message: 'Database seeded successfully with demo users and locations!',
+      credentials: [
+        { role: 'manager', email: 'manager@delivery.com', password: 'manager123' },
+        { role: 'admin', email: 'admin@delivery.com', password: 'admin123' },
+        { role: 'driver', email: 'driver1@delivery.com', password: 'driver123' },
+      ],
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/drivers', driversRoutes);
