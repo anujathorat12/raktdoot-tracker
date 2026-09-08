@@ -153,12 +153,15 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
   const validDrivers = fleetDriversList.filter(d => d.lat && d.lng && (d.lat !== 0 || d.lng !== 0));
   const activeDrivers = validDrivers.filter(d => d.status === 'active' || d.status === 'issue');
 
+  const lastFocusedIdRef = useRef(null);
+
   // Programmatically fly to and pop open driver marker
   const focusOnDriver = useCallback((driverId, zoom = 16) => {
     const driver = fleetDriversList.find(d => d.id === driverId);
     if (!mapInstance || !driver) return;
 
     if (driver.lat && driver.lng && (driver.lat !== 0 || driver.lng !== 0)) {
+      lastFocusedIdRef.current = driverId;
       mapInstance.flyTo([driver.lat, driver.lng], zoom, {
         animate: true,
         duration: 1.1,
@@ -173,12 +176,28 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
     }
   }, [mapInstance, fleetDriversList]);
 
-  // Sync when selectedDriverId changes externally (e.g. from sidebar list)
+  // Smooth live vehicle tracking: when selected, smoothly panTo moving vehicle
   useEffect(() => {
-    if (selectedDriverId) {
-      focusOnDriver(selectedDriverId);
+    if (!selectedDriverId || !mapInstance) {
+      lastFocusedIdRef.current = null;
+      return;
     }
-  }, [selectedDriverId, focusOnDriver]);
+
+    const driver = fleetDriversList.find(d => d.id === selectedDriverId);
+    if (!driver || !driver.lat || !driver.lng) return;
+
+    if (lastFocusedIdRef.current !== selectedDriverId) {
+      // Initial focus on driver
+      lastFocusedIdRef.current = selectedDriverId;
+      mapInstance.flyTo([driver.lat, driver.lng], 16, { animate: true, duration: 1.0 });
+      setTimeout(() => {
+        markerRefs.current[selectedDriverId]?.openPopup();
+      }, 500);
+    } else {
+      // Smooth continuous camera panning as vehicle travels
+      mapInstance.panTo([driver.lat, driver.lng], { animate: true, duration: 0.8 });
+    }
+  }, [selectedDriverId, fleetDriversList, mapInstance]);
 
   // Handle selecting a person from the search overlay
   const handleSelectPerson = useCallback((person) => {

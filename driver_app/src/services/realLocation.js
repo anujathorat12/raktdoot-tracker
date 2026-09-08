@@ -156,8 +156,84 @@ export async function getExactCurrentLocation() {
 }
 
 /**
+ * Dynamic movement tracker: computes realistic speed (km/h) and direction (bearing)
+ * between consecutive GPS positions, especially useful when mobile OS reports null/0 speed.
+ */
+let prevTrackedPosition = null;
+let lastGeocodedPoint = null;
+let cachedAddress = null;
+
+export function calculateMovementDynamics(prev, curr) {
+  if (!prev) {
+    return {
+      speed: curr.speed || 0,
+      heading: curr.heading || 0,
+    };
+  }
+
+  const R = 6371000; // Earth radius in meters
+  const dLat = (curr.lat - prev.lat) * (Math.PI / 180);
+  const dLng = (curr.lng - prev.lng) * (Math.PI / 180);
+  const lat1 = prev.lat * (Math.PI / 180);
+  const lat2 = curr.lat * (Math.PI / 180);
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distanceMeters = R * c;
+
+  const timeDeltaSec = Math.max(0.5, ((curr.timestamp || Date.now()) - (prev.timestamp || Date.now() - 3000)) / 1000);
+
+  // Use OS hardware sensor speed if positive, otherwise calculate from displacement
+  let speed = curr.speed;
+  if (!speed || speed <= 0) {
+    if (distanceMeters > 1.2 && timeDeltaSec < 20) {
+      speed = (distanceMeters / timeDeltaSec) * 3.6; // m/s to km/h
+    } else {
+      speed = 0;
+    }
+  }
+
+  // Heading bearing calculation if vehicle moved > 1.5 meters
+  let heading = curr.heading;
+  if ((!heading || heading === 0) && distanceMeters > 1.5) {
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    heading = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  } else if (!heading) {
+    heading = prev.heading || 0;
+  }
+
+  return {
+    speed: parseFloat(Math.min(180, Math.max(0, speed)).toFixed(1)),
+    heading: Math.round(heading),
+  };
+}
+
+async function getOptimizedAddress(lat, lng) {
+  if (!lastGeocodedPoint || !cachedAddress) {
+    cachedAddress = await reverseGeocodeCoords(lat, lng);
+    lastGeocodedPoint = { lat, lng, time: Date.now() };
+    return cachedAddress;
+  }
+
+  // If vehicle has moved less than 120m and within 15s, reuse current road/locality
+  const dLat = Math.abs(lat - lastGeocodedPoint.lat);
+  const dLng = Math.abs(lng - lastGeocodedPoint.lng);
+  const approxDistance = Math.sqrt(dLat * dLat + dLng * dLng) * 111000;
+
+  if (approxDistance < 120 && (Date.now() - lastGeocodedPoint.time) < 15000) {
+    return cachedAddress;
+  }
+
+  cachedAddress = await reverseGeocodeCoords(lat, lng);
+  lastGeocodedPoint = { lat, lng, time: Date.now() };
+  return cachedAddress;
+}
+
+/**
  * Continuous real-time GPS location watcher
- * Supports continuous streaming on both Web and Mobile
+ * Supports continuous streaming on both Web and Mobile as vehicles travel along roads.
  */
 export function startLocationWatcher(onLocation, onError) {
   let isStopped = false;
@@ -165,24 +241,40 @@ export function startLocationWatcher(onLocation, onError) {
   let webPollInterval = null;
   let nativeSubscription = null;
 
+  const processPoint = async (rawPoint) => {
+    if (isStopped) return;
+
+    const dynamics = calculateMovementDynamics(prevTrackedPosition, rawPoint);
+    const address = await getOptimizedAddress(rawPoint.lat, rawPoint.lng);
+    if (isStopped) return;
+
+    const processed = {
+      lat: rawPoint.lat,
+      lng: rawPoint.lng,
+      speed: dynamics.speed,
+      heading: dynamics.heading,
+      accuracy: rawPoint.accuracy,
+      address,
+      timestamp: rawPoint.timestamp || Date.now(),
+    };
+
+    prevTrackedPosition = processed;
+    onLocation(processed);
+  };
+
   if (Platform.OS === 'web') {
     if (!navigator.geolocation) {
       onError?.(new Error('Geolocation not supported'));
       return () => {};
     }
 
-    const handleWebCoords = async (coords, timestamp) => {
-      if (isStopped) return;
-      const address = await reverseGeocodeCoords(coords.latitude, coords.longitude);
-      if (isStopped) return;
-
-      onLocation({
+    const handleWebCoords = (coords, timestamp) => {
+      processPoint({
         lat: coords.latitude,
         lng: coords.longitude,
         speed: Math.max(0, (coords.speed || 0) * 3.6),
         heading: coords.heading || 0,
         accuracy: Math.round(coords.accuracy || 0),
-        address,
         timestamp,
       });
     };
@@ -200,16 +292,16 @@ export function startLocationWatcher(onLocation, onError) {
     webWatchId = navigator.geolocation.watchPosition(
       (pos) => handleWebCoords(pos.coords, pos.timestamp),
       () => {}, // Silent error on watch fallback
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 2000 }
     );
 
-    // 3. Periodic polling every 3.5 seconds to guarantee updates on stationary desktops/laptops
+    // 3. Periodic polling every 3 seconds to guarantee telemetry packets stream continuously
     webPollInterval = setInterval(() => {
       if (isStopped) return;
       acquireWebPosition(4000)
         .then(pos => handleWebCoords(pos.coords, pos.timestamp))
         .catch(() => {}); // Periodic catch
-    }, 3500);
+    }, 3000);
 
     return () => {
       isStopped = true;
@@ -226,40 +318,41 @@ export function startLocationWatcher(onLocation, onError) {
           return;
         }
 
+        // Optional background permission request for driving with screen locked / app backgrounded
+        try {
+          if (Location.requestBackgroundPermissionsAsync) {
+            await Location.requestBackgroundPermissionsAsync();
+          }
+        } catch (_) {}
+
         // Immediate first point
         const first = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
         if (!isStopped) {
-          const address = await reverseGeocodeCoords(first.coords.latitude, first.coords.longitude);
-          onLocation({
+          processPoint({
             lat: first.coords.latitude,
             lng: first.coords.longitude,
             speed: Math.max(0, (first.coords.speed || 0) * 3.6),
             heading: first.coords.heading || 0,
             accuracy: Math.round(first.coords.accuracy || 0),
-            address,
             timestamp: first.timestamp,
           });
         }
 
-        // Continuous watch with distanceInterval: 0 to catch stationary heartbeats
+        // Continuous watch with distanceInterval: 0 to catch every vehicle movement
         nativeSubscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 3000,
-            distanceInterval: 0,
+            timeInterval: 2000, // Update every 2 seconds while moving
+            distanceInterval: 1, // Trigger on 1 meter movement
           },
-          async (pos) => {
+          (pos) => {
             if (isStopped) return;
-            const address = await reverseGeocodeCoords(pos.coords.latitude, pos.coords.longitude);
-            if (isStopped) return;
-
-            onLocation({
+            processPoint({
               lat: pos.coords.latitude,
               lng: pos.coords.longitude,
               speed: Math.max(0, (pos.coords.speed || 0) * 3.6),
               heading: pos.coords.heading || 0,
               accuracy: Math.round(pos.coords.accuracy || 0),
-              address,
               timestamp: pos.timestamp,
             });
           }
