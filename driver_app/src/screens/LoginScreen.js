@@ -1,472 +1,376 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView,
-  Platform, ScrollView, Image
+  Platform, ScrollView, Image, Animated, StatusBar,
 } from 'react-native';
-import { DEFAULT_SERVER_URL, PRESET_SERVER_URLS, DEMO_CREDENTIALS } from '../config/constants';
-import { loginDriver, storeAuth, storeServerUrl, getStoredServerUrl } from '../services/api';
+import { DEFAULT_SERVER_URL, PRESET_SERVER_URLS } from '../config/constants';
+import {
+  loginDriver, registerDriver,
+  storeAuth, storeServerUrl, getStoredServerUrl,
+} from '../services/api';
+
+const omDropImg    = require('../../assets/om_blood_drop_logo.jpg');
+const nabhBadgeImg = require('../../assets/nabh_badge_logo.jpg');
 
 export default function LoginScreen({ onLoginSuccess }) {
-  const [email, setEmail] = useState(DEMO_CREDENTIALS.email);
-  const [password, setPassword] = useState(DEMO_CREDENTIALS.password);
-  const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER_URL);
-  const [loading, setLoading] = useState(false);
-  const [showPass, setShowPass] = useState(false);
+  const [activeTab, setActiveTab]               = useState('signin');
+  const [serverUrl, setServerUrl]               = useState(DEFAULT_SERVER_URL);
   const [showServerConfig, setShowServerConfig] = useState(false);
+  const [loading, setLoading]                   = useState(false);
+
+  const [siEmail, setSiEmail]       = useState('');
+  const [siPassword, setSiPassword] = useState('');
+  const [siShowPass, setSiShowPass] = useState(false);
+  const [siEmailFocused, setSiEmailFocused] = useState(false);
+  const [siPassFocused,  setSiPassFocused]  = useState(false);
+
+  const [rgName,     setRgName]     = useState('');
+  const [rgEmail,    setRgEmail]    = useState('');
+  const [rgPhone,    setRgPhone]    = useState('');
+  const [rgPassword, setRgPassword] = useState('');
+  const [rgConfirm,  setRgConfirm]  = useState('');
+  const [rgShowPass,    setRgShowPass]    = useState(false);
+  const [rgShowConfirm, setRgShowConfirm] = useState(false);
+  const [rgNameFocused,  setRgNameFocused]  = useState(false);
+  const [rgEmailFocused, setRgEmailFocused] = useState(false);
+  const [rgPhoneFocused, setRgPhoneFocused] = useState(false);
+  const [rgPassFocused,  setRgPassFocused]  = useState(false);
+  const [rgConfFocused,  setRgConfFocused]  = useState(false);
+
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(28)).current;
+  const tabSlide  = useRef(new Animated.Value(0)).current;
+  const btnScale  = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    getStoredServerUrl(DEFAULT_SERVER_URL).then(url => {
-      if (url) setServerUrl(url);
-    });
+    getStoredServerUrl(DEFAULT_SERVER_URL).then(url => { if (url) setServerUrl(url); });
+    Animated.parallel([
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+    ]).start();
   }, []);
 
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    Animated.spring(tabSlide, {
+      toValue: tab === 'signin' ? 0 : 1,
+      useNativeDriver: false,
+      tension: 80,
+      friction: 10,
+    }).start();
+  };
+
+  const pressIn  = () => Animated.spring(btnScale, { toValue: 0.96, useNativeDriver: true }).start();
+  const pressOut = () => Animated.spring(btnScale, { toValue: 1,    useNativeDriver: true }).start();
+
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Required', 'Please enter both email and password.');
+    if (!siEmail.trim() || !siPassword.trim()) {
+      Alert.alert('Required', 'Please enter your email and password.');
       return;
     }
-
     try {
       setLoading(true);
       await storeServerUrl(serverUrl);
-      const authData = await loginDriver(serverUrl, email.trim(), password);
-
+      const authData = await loginDriver(serverUrl, siEmail.trim(), siPassword);
       if (authData.user?.role !== 'driver') {
-        throw new Error('Access denied. This app is strictly for delivery drivers.');
+        throw new Error('Access denied. This app is for delivery drivers only.');
       }
-
       await storeAuth(authData);
       onLoginSuccess(authData, serverUrl);
     } catch (err) {
-      Alert.alert(
-        'Login Failed',
-        `${err.message}\n\nMake sure the backend server is running and your Server URL is reachable.`
-      );
+      Alert.alert('Login Failed', err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFillDemo = () => {
-    setEmail(DEMO_CREDENTIALS.email);
-    setPassword(DEMO_CREDENTIALS.password);
+  const handleRegister = async () => {
+    const name  = rgName.trim();
+    const email = rgEmail.trim();
+    const phone = rgPhone.trim();
+    if (!name || !email || !rgPassword) {
+      Alert.alert('Required', 'Full name, email, and password are required.');
+      return;
+    }
+    const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRx.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    if (phone && !/^\+?[0-9\s\-()]{7,15}$/.test(phone)) {
+      Alert.alert('Invalid Phone', 'Please enter a valid phone number.');
+      return;
+    }
+    if (rgPassword.length < 6) {
+      Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+      return;
+    }
+    if (rgPassword !== rgConfirm) {
+      Alert.alert('Passwords Mismatch', 'Password and confirm password do not match.');
+      return;
+    }
+    try {
+      setLoading(true);
+      await storeServerUrl(serverUrl);
+      const authData = await registerDriver(serverUrl, { name, email, password: rgPassword, phone });
+      await storeAuth(authData);
+      Alert.alert(
+        'Account Created!',
+        `Welcome, ${authData.user.name}! Your driver account has been created successfully.`,
+        [{ text: 'Continue', onPress: () => onLoginSuccess(authData, serverUrl) }]
+      );
+    } catch (err) {
+      Alert.alert('Registration Failed', err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const indicatorLeft = tabSlide.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['2%', '50%'],
+  });
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#080910" />
+      <View style={s.glowTL} pointerEvents="none" />
+      <View style={s.glowBR} pointerEvents="none" />
 
-        {/* Top Header Bar: Harbinger Logo */}
-        <View style={styles.topHeader}>
-          <Image
-            source={require('../../assets/harbinger_logo.png')}
-            style={styles.harbingerLogo}
-            resizeMode="contain"
-          />
-        </View>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Animated.View style={[s.inner, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
 
-        {/* Brand Section */}
-        <View style={styles.brandContainer}>
-          {/* Jankalyan Badges Row */}
-          <View style={styles.badgesRow}>
-            {/* Om Blood Drop Badge */}
-            <View style={styles.omBadgeCircle}>
-              <Text style={styles.omSymbolText}>ॐ</Text>
+          <View style={s.logoBlock}>
+            <View style={s.logosRow}>
+              <Image source={omDropImg}    style={s.omDropImg}    resizeMode="contain" />
+              <Image source={nabhBadgeImg} style={s.nabhBadgeImg} resizeMode="cover" />
             </View>
-
-            {/* NABH Accredited Badge */}
-            <View style={styles.nabhBadgeCircle}>
-              <Text style={styles.nabhTextTop}>NABH</text>
-              <Text style={styles.nabhCheck}>✓</Text>
-              <Text style={styles.nabhTextBottom}>ACCREDITED</Text>
+            <Text style={s.centreName}>Jankalyan Blood Centre</Text>
+            <Text style={s.centreNameMr}>जनकल्याण रक्तपेढी, पुणे</Text>
+            <View style={s.pill}>
+              <Text style={s.pillHeart}>❤️</Text>
+              <Text style={s.pillText}>Raktdoot Tracker</Text>
             </View>
           </View>
 
-          {/* Title & Tag */}
-          <Text style={styles.centreTitle}>Jankalyan Blood Centre, Pune</Text>
-          <View style={styles.tagPill}>
-            <Text style={styles.tagText}>❤️ Raktdoot Driver Portal</Text>
-          </View>
-          <Text style={styles.heroSub}>
-            Real-Time Cold-Chain Tracking & Emergency Dispatch
-          </Text>
-        </View>
+          <View style={s.card}>
+            <View style={s.tabBar}>
+              <Animated.View style={[s.tabIndicator, { left: indicatorLeft }]} />
+              <TouchableOpacity style={s.tabBtn} onPress={() => switchTab('signin')} activeOpacity={0.8}>
+                <Text style={[s.tabLabel, activeTab === 'signin' && s.tabLabelActive]}>Sign In</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.tabBtn} onPress={() => switchTab('register')} activeOpacity={0.8}>
+                <Text style={[s.tabLabel, activeTab === 'register' && s.tabLabelActive]}>Create Account</Text>
+              </TouchableOpacity>
+            </View>
 
-        {/* Mobile Form Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Driver Sign In</Text>
-          <Text style={styles.cardSubtitle}>
-            Enter credentials to go online & start location tracking
-          </Text>
+            {activeTab === 'signin' && (
+              <View style={s.formSection}>
+                <Text style={s.cardTitle}>Welcome Back</Text>
+                <Text style={s.cardSub}>Enter your credentials to access the Raktdoot Portal</Text>
 
-          {/* Email / Driver ID */}
-          <Text style={styles.label}>EMAIL ADDRESS / DRIVER ID</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputIcon}>✉️</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. driver1@delivery.com"
-              placeholderTextColor="#64748b"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
+                <Text style={s.label}>EMAIL ADDRESS / USER ID</Text>
+                <View style={[s.inputRow, siEmailFocused && s.inputRowFocused]}>
+                  <Text style={s.inputIcon}>email</Text>
+                  <TextInput style={s.input} placeholder="driver@raktdoot.com" placeholderTextColor="#374151"
+                    value={siEmail} onChangeText={setSiEmail} autoCapitalize="none"
+                    keyboardType="email-address" autoCorrect={false}
+                    onFocus={() => setSiEmailFocused(true)} onBlur={() => setSiEmailFocused(false)} />
+                </View>
 
-          {/* Password */}
-          <Text style={styles.label}>PASSWORD</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputIcon}>🔒</Text>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder="Enter password"
-              placeholderTextColor="#64748b"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPass}
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowPass(!showPass)}
-            >
-              <Text style={{ fontSize: 16 }}>{showPass ? '👁️' : '🙈'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Server Config Toggle */}
-          <TouchableOpacity
-            style={styles.serverToggle}
-            onPress={() => setShowServerConfig(!showServerConfig)}
-          >
-            <Text style={styles.serverToggleText}>
-              ⚙️ Server Endpoint: <Text style={{ color: '#fca5a5', fontWeight: '700' }}>{serverUrl}</Text>
-            </Text>
-          </TouchableOpacity>
-
-          {showServerConfig && (
-            <View style={styles.serverConfigBox}>
-              <Text style={styles.serverConfigTitle}>API Server URL</Text>
-              <TextInput
-                style={styles.serverInput}
-                value={serverUrl}
-                onChangeText={setServerUrl}
-                autoCapitalize="none"
-                placeholder="http://10.0.2.2:5000"
-                placeholderTextColor="#64748b"
-              />
-              <View style={styles.presetRow}>
-                {PRESET_SERVER_URLS.map(preset => (
-                  <TouchableOpacity
-                    key={preset.url}
-                    style={[styles.presetBtn, serverUrl === preset.url && styles.presetBtnActive]}
-                    onPress={() => setServerUrl(preset.url)}
-                  >
-                    <Text style={[styles.presetText, serverUrl === preset.url && styles.presetTextActive]}>
-                      {preset.label}
-                    </Text>
+                <Text style={s.label}>PASSWORD</Text>
+                <View style={[s.inputRow, siPassFocused && s.inputRowFocused]}>
+                  <Text style={s.inputIcon}>lock</Text>
+                  <TextInput style={[s.input, { flex: 1 }]} placeholder="password" placeholderTextColor="#374151"
+                    value={siPassword} onChangeText={setSiPassword} secureTextEntry={!siShowPass}
+                    autoCorrect={false} onFocus={() => setSiPassFocused(true)} onBlur={() => setSiPassFocused(false)} />
+                  <TouchableOpacity onPress={() => setSiShowPass(v => !v)} style={s.eyeBtn} hitSlop={{ top:10,bottom:10,left:10,right:10 }}>
+                    <Text style={s.eyeIcon}>{siShowPass ? '🙈' : '👁️'}</Text>
                   </TouchableOpacity>
-                ))}
+                </View>
+
+                <ServerConfig serverUrl={serverUrl} setServerUrl={setServerUrl} show={showServerConfig} setShow={setShowServerConfig} />
+
+                <Animated.View style={[{ transform: [{ scale: btnScale }] }, s.btnWrap]}>
+                  <TouchableOpacity style={[s.submitBtn, loading && { opacity: 0.65 }]}
+                    onPress={handleLogin} onPressIn={pressIn} onPressOut={pressOut} disabled={loading} activeOpacity={0.9}>
+                    {loading ? <ActivityIndicator color="white" size="small" /> : <Text style={s.submitText}>⚡  Sign In</Text>}
+                  </TouchableOpacity>
+                </Animated.View>
+
+                <TouchableOpacity onPress={() => switchTab('register')} style={s.switchLink}>
+                  <Text style={s.switchLinkText}>New driver? <Text style={s.switchLinkHighlight}>Create an account</Text></Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          )}
-
-          {/* Sign In Button */}
-          <TouchableOpacity
-            style={[styles.loginBtn, loading && { opacity: 0.7 }]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.loginBtnText}>⚡ Sign In & Go Online</Text>
             )}
-          </TouchableOpacity>
 
-          {/* Quick Demo Fill Button */}
-          <TouchableOpacity style={styles.demoBtn} onPress={handleFillDemo}>
-            <Text style={styles.demoBtnText}>⚡ Autofill Demo Driver (Ravi Kumar)</Text>
-          </TouchableOpacity>
-        </View>
+            {activeTab === 'register' && (
+              <View style={s.formSection}>
+                <Text style={s.cardTitle}>Join as Driver</Text>
+                <Text style={s.cardSub}>Fill in your details to create your driver account</Text>
 
-        {/* Global Application Footer */}
-        <View style={styles.footerBar}>
-          <Text style={styles.footerText}>
-            © 2026 Jankalyan Blood Centre, Pune | Powered by Harbinger Systems Pvt. Ltd.
-          </Text>
-        </View>
+                <Text style={s.label}>FULL NAME *</Text>
+                <View style={[s.inputRow, rgNameFocused && s.inputRowFocused]}>
+                  <Text style={s.inputIcon}>👤</Text>
+                  <TextInput style={s.input} placeholder="Ramesh Kumar" placeholderTextColor="#374151"
+                    value={rgName} onChangeText={setRgName} autoCorrect={false}
+                    onFocus={() => setRgNameFocused(true)} onBlur={() => setRgNameFocused(false)} />
+                </View>
+
+                <Text style={s.label}>EMAIL ADDRESS *</Text>
+                <View style={[s.inputRow, rgEmailFocused && s.inputRowFocused]}>
+                  <Text style={s.inputIcon}>📧</Text>
+                  <TextInput style={s.input} placeholder="driver@raktdoot.com" placeholderTextColor="#374151"
+                    value={rgEmail} onChangeText={setRgEmail} autoCapitalize="none"
+                    keyboardType="email-address" autoCorrect={false}
+                    onFocus={() => setRgEmailFocused(true)} onBlur={() => setRgEmailFocused(false)} />
+                </View>
+
+                <Text style={s.label}>PHONE NUMBER</Text>
+                <View style={[s.inputRow, rgPhoneFocused && s.inputRowFocused]}>
+                  <Text style={s.inputIcon}>📞</Text>
+                  <TextInput style={s.input} placeholder="+91 98765 43210" placeholderTextColor="#374151"
+                    value={rgPhone} onChangeText={setRgPhone} keyboardType="phone-pad" autoCorrect={false}
+                    onFocus={() => setRgPhoneFocused(true)} onBlur={() => setRgPhoneFocused(false)} />
+                </View>
+
+                <Text style={s.label}>PASSWORD *</Text>
+                <View style={[s.inputRow, rgPassFocused && s.inputRowFocused]}>
+                  <Text style={s.inputIcon}>🔒</Text>
+                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Min. 6 characters" placeholderTextColor="#374151"
+                    value={rgPassword} onChangeText={setRgPassword} secureTextEntry={!rgShowPass}
+                    autoCorrect={false} onFocus={() => setRgPassFocused(true)} onBlur={() => setRgPassFocused(false)} />
+                  <TouchableOpacity onPress={() => setRgShowPass(v => !v)} style={s.eyeBtn} hitSlop={{ top:10,bottom:10,left:10,right:10 }}>
+                    <Text style={s.eyeIcon}>{rgShowPass ? '🙈' : '👁️'}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={s.label}>CONFIRM PASSWORD *</Text>
+                <View style={[s.inputRow, rgConfFocused && s.inputRowFocused, rgConfirm && rgPassword !== rgConfirm && s.inputRowError]}>
+                  <Text style={s.inputIcon}>🔐</Text>
+                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Re-enter password" placeholderTextColor="#374151"
+                    value={rgConfirm} onChangeText={setRgConfirm} secureTextEntry={!rgShowConfirm}
+                    autoCorrect={false} onFocus={() => setRgConfFocused(true)} onBlur={() => setRgConfFocused(false)} />
+                  <TouchableOpacity onPress={() => setRgShowConfirm(v => !v)} style={s.eyeBtn} hitSlop={{ top:10,bottom:10,left:10,right:10 }}>
+                    <Text style={s.eyeIcon}>{rgShowConfirm ? '🙈' : '👁️'}</Text>
+                  </TouchableOpacity>
+                </View>
+                {rgConfirm.length > 0 && rgPassword !== rgConfirm && (
+                  <Text style={s.errorHint}>⚠️ Passwords do not match</Text>
+                )}
+
+
+                <View style={s.infoRow}>
+                  <Text style={s.infoText}>🔵 Role: <Text style={s.infoHighlight}>Driver</Text>{'   '}🔵 Access: <Text style={s.infoHighlight}>Raktdoot App</Text></Text>
+                </View>
+
+                <ServerConfig serverUrl={serverUrl} setServerUrl={setServerUrl} show={showServerConfig} setShow={setShowServerConfig} />
+
+                <Animated.View style={[{ transform: [{ scale: btnScale }] }, s.btnWrap]}>
+                  <TouchableOpacity style={[s.submitBtn, s.submitBtnGreen, loading && { opacity: 0.65 }]}
+                    onPress={handleRegister} onPressIn={pressIn} onPressOut={pressOut} disabled={loading} activeOpacity={0.9}>
+                    {loading ? <ActivityIndicator color="white" size="small" /> : <Text style={s.submitText}>🚀  Create Account</Text>}
+                  </TouchableOpacity>
+                </Animated.View>
+
+                <TouchableOpacity onPress={() => switchTab('signin')} style={s.switchLink}>
+                  <Text style={s.switchLinkText}>Already have an account? <Text style={s.switchLinkHighlight}>Sign in</Text></Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          <View style={s.footer}>
+            <Text style={s.poweredBy}>Powered by</Text>
+            <Image source={require('../../assets/harbinger_logo.png')} style={s.harbingerLogo} resizeMode="contain" />
+            <Text style={s.copyright}>© 2026 Jankalyan Blood Centre, Pune</Text>
+          </View>
+
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#090507',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
-    padding: 20,
-    paddingTop: 16,
-    paddingBottom: 10,
-  },
-  topHeader: {
-    alignItems: 'flex-end',
-    marginBottom: 10,
-  },
-  harbingerLogo: {
-    height: 38,
-    width: 140,
-  },
-  brandContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  badgesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 12,
-  },
-  omBadgeCircle: {
-    width: 56,
-    height: 64,
-    borderRadius: 28,
-    backgroundColor: '#ee2a35',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ee2a35',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  omSymbolText: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  nabhBadgeCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#0b4f9c',
-    borderWidth: 2,
-    borderColor: '#d92626',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  nabhTextTop: {
-    color: '#ffffff',
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  nabhCheck: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '900',
-    marginVertical: -2,
-  },
-  nabhTextBottom: {
-    color: '#ffffff',
-    fontSize: 5.5,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  centreTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#ffffff',
-    textAlign: 'center',
-    letterSpacing: -0.2,
-    marginBottom: 6,
-  },
-  tagPill: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  tagText: {
-    color: '#f87171',
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  heroSub: {
-    fontSize: 12,
-    color: '#94a3b8',
-    textAlign: 'center',
-  },
-  card: {
-    backgroundColor: '#0f111a',
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#dc2626',
-    padding: 20,
-    shadowColor: '#dc2626',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  cardSubtitle: {
-    fontSize: 11.5,
-    color: '#94a3b8',
-    textAlign: 'center',
-    marginBottom: 18,
-  },
-  label: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#cbd5e1',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e8f1fd',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 44,
-    marginBottom: 14,
-  },
-  inputIcon: {
-    fontSize: 14,
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 13.5,
-    fontWeight: '600',
-    color: '#0f172a',
-    paddingVertical: 0,
-  },
-  eyeBtn: {
-    padding: 4,
-  },
-  serverToggle: {
-    paddingVertical: 4,
-    marginBottom: 12,
-  },
-  serverToggleText: {
-    fontSize: 11,
-    color: '#94a3b8',
-  },
-  serverConfigBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  serverConfigTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fca5a5',
-    marginBottom: 6,
-  },
-  serverInput: {
-    backgroundColor: '#161822',
-    borderRadius: 6,
-    padding: 8,
-    fontSize: 12,
-    color: '#f8fafc',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: 8,
-  },
-  presetRow: {
-    flexDirection: 'column',
-    gap: 4,
-  },
-  presetBtn: {
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  presetBtnActive: {
-    backgroundColor: 'rgba(239, 68, 68, 0.25)',
-    borderWidth: 1,
-    borderColor: '#dc2626',
-  },
-  presetText: {
-    fontSize: 10.5,
-    color: '#94a3b8',
-  },
-  presetTextActive: {
-    color: '#fca5a5',
-    fontWeight: '700',
-  },
-  loginBtn: {
-    backgroundColor: '#dc2626',
-    borderRadius: 10,
-    height: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-    shadowColor: '#dc2626',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  loginBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  demoBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  demoBtnText: {
-    color: '#fca5a5',
-    fontSize: 11.5,
-    fontWeight: '600',
-  },
-  footerBar: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-    paddingTop: 12,
-    alignItems: 'center',
-  },
-  footerText: {
-    textAlign: 'center',
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '500',
-  },
+function ServerConfig({ serverUrl, setServerUrl, show, setShow }) {
+  return (
+    <>
+      <TouchableOpacity style={s.serverToggle} onPress={() => setShow(v => !v)}>
+        <Text style={s.serverToggleText}>⚙️  Server: <Text style={s.serverUrlValue}>{serverUrl}</Text> <Text style={s.chevron}>{show ? '▲' : '▼'}</Text></Text>
+      </TouchableOpacity>
+      {show && (
+        <View style={s.serverPanel}>
+          <Text style={s.serverPanelLabel}>API SERVER ENDPOINT</Text>
+          <TextInput style={s.serverInput} value={serverUrl} onChangeText={setServerUrl}
+            autoCapitalize="none" placeholder="http://10.0.2.2:5000" placeholderTextColor="#374151" />
+          {PRESET_SERVER_URLS.map(p => (
+            <TouchableOpacity key={p.url} style={[s.presetBtn, serverUrl === p.url && s.presetBtnActive]} onPress={() => setServerUrl(p.url)}>
+              <Text style={[s.presetLabel, serverUrl === p.url && s.presetLabelActive]}>{p.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </>
+  );
+}
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#080910' },
+  glowTL: { position: 'absolute', top: -60, left: -60, width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(180,20,20,0.16)' },
+  glowBR: { position: 'absolute', bottom: -60, right: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(99,102,241,0.08)' },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 40 },
+  inner: { alignItems: 'center', gap: 24 },
+  logoBlock: { alignItems: 'center', gap: 6 },
+  logosRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
+  omDropImg: { width: 72, height: 88, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.55, shadowRadius: 14, elevation: 10 },
+  nabhBadgeImg: { width: 80, height: 80 },
+  centreName: { fontSize: 20, fontWeight: '800', color: '#f8fafc', textAlign: 'center', letterSpacing: 0.2 },
+  centreNameMr: { fontSize: 13, color: '#64748b', textAlign: 'center', fontWeight: '500' },
+  pill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(220,38,38,0.14)', borderWidth: 1, borderColor: 'rgba(220,38,38,0.35)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginTop: 4, gap: 5 },
+  pillHeart: { fontSize: 11 },
+  pillText: { color: '#fca5a5', fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 },
+  card: { width: '100%', backgroundColor: '#0e0f18', borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(220,38,38,0.42)', overflow: 'hidden', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.28, shadowRadius: 24, elevation: 12 },
+  tabBar: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.04)', margin: 14, borderRadius: 12, padding: 4, position: 'relative', height: 44 },
+  tabIndicator: { position: 'absolute', top: 4, width: '48%', height: 36, backgroundColor: '#DC2626', borderRadius: 9, shadowColor: '#DC2626', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.45, shadowRadius: 8, elevation: 4 },
+  tabBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
+  tabLabel: { fontSize: 13, fontWeight: '600', color: '#475569' },
+  tabLabelActive: { color: '#ffffff', fontWeight: '800' },
+  formSection: { paddingHorizontal: 20, paddingBottom: 22 },
+  cardTitle: { fontSize: 20, fontWeight: '800', color: '#f1f5f9', textAlign: 'center', marginBottom: 4 },
+  cardSub: { fontSize: 11.5, color: '#475569', textAlign: 'center', marginBottom: 18, lineHeight: 17 },
+  label: { fontSize: 10, fontWeight: '700', color: '#475569', letterSpacing: 0.9, marginBottom: 7, textTransform: 'uppercase' },
+  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#090a11', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 11, paddingHorizontal: 12, marginBottom: 14, minHeight: 48 },
+  inputRowFocused: { borderColor: 'rgba(220,38,38,0.5)', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  inputRowError: { borderColor: 'rgba(251,113,133,0.6)' },
+  inputIcon: { fontSize: 15, marginRight: 9 },
+  input: { flex: 1, color: '#f1f5f9', fontSize: 14, paddingVertical: 10 },
+  eyeBtn: { paddingLeft: 8 },
+  eyeIcon: { fontSize: 17 },
+  errorHint: { fontSize: 11, color: '#f87171', marginTop: -10, marginBottom: 10, marginLeft: 4 },
+  infoRow: { backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(99,102,241,0.18)' },
+  infoText: { fontSize: 11, color: '#64748b', textAlign: 'center' },
+  infoHighlight: { color: '#818cf8', fontWeight: '700' },
+  serverToggle: { paddingVertical: 6 },
+  serverToggleText: { fontSize: 11, color: '#374151' },
+  serverUrlValue: { color: '#6366f1' },
+  chevron: { color: '#374151', fontSize: 9 },
+  serverPanel: { backgroundColor: '#090a11', borderRadius: 11, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(99,102,241,0.18)' },
+  serverPanelLabel: { fontSize: 9.5, fontWeight: '700', color: '#4f46e5', letterSpacing: 0.8, marginBottom: 8 },
+  serverInput: { backgroundColor: '#0e0f18', borderRadius: 8, padding: 9, fontSize: 12, color: '#f8fafc', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', marginBottom: 8 },
+  presetBtn: { paddingVertical: 7, paddingHorizontal: 10, borderRadius: 7, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.03)' },
+  presetBtnActive: { backgroundColor: 'rgba(99,102,241,0.18)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.4)' },
+  presetLabel: { fontSize: 11, color: '#374151' },
+  presetLabelActive: { color: '#a5b4fc', fontWeight: '700' },
+  btnWrap: { marginTop: 14 },
+  submitBtn: { backgroundColor: '#DC2626', borderRadius: 13, paddingVertical: 15, alignItems: 'center', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.48, shadowRadius: 14, elevation: 8 },
+  submitBtnGreen: { backgroundColor: '#059669', shadowColor: '#059669' },
+  submitText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
+  switchLink: { marginTop: 14, alignItems: 'center' },
+  switchLinkText: { fontSize: 12, color: '#374151' },
+  switchLinkHighlight: { color: '#f87171', fontWeight: '700' },
+  footer: { alignItems: 'center', gap: 6 },
+  poweredBy: { fontSize: 10, color: '#1f2937', letterSpacing: 1.2, textTransform: 'uppercase' },
+  harbingerLogo: { width: 130, height: 40, opacity: 0.60 },
+  copyright: { fontSize: 10, color: '#1f2937', textAlign: 'center' },
 });

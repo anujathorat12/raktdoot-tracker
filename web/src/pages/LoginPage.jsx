@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import harbingerLogo from '../assets/harbinger_logo_actual.png';
 import omBloodDropIcon from '../assets/om_blood_drop.svg';
-import nabhBadgeIcon from '../assets/nabh_accredited_badge.svg';
+import nabhBadgeIcon from '../assets/nabh_accredited_badge_real.png';
 import Footer from '../components/layout/Footer';
 import {
   Truck, Thermometer, Clock, Award,
@@ -87,31 +87,10 @@ export default function LoginPage() {
       {/* Background glow effects */}
       <div className="brand-login-bg-glow" />
 
-      {/* Top Header Navigation */}
+      {/* Top Header — Harbinger logo only */}
       <header className="brand-login-header">
-        <div className="header-right-stack">
-          {/* Harbinger Group Logo */}
-          <div className="harbinger-brand">
-            <img src={harbingerLogo} alt="Harbinger Group" className="harbinger-logo-img" />
-          </div>
-
-          {/* Language Selector (Without Globe Icon) */}
-          <div className="lang-selector">
-            <button
-              type="button"
-              className={`lang-btn ${lang === 'mr' ? 'active' : ''}`}
-              onClick={() => setLang('mr')}
-            >
-              मराठी
-            </button>
-            <button
-              type="button"
-              className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
-              onClick={() => setLang('en')}
-            >
-              English
-            </button>
-          </div>
+        <div className="harbinger-brand">
+          <img src={harbingerLogo} alt="Harbinger Group" className="harbinger-logo-img" />
         </div>
       </header>
 
@@ -126,7 +105,7 @@ export default function LoginPage() {
             </div>
 
             <div className="nabh-badge-circle" title="NABH Accredited">
-              <img src={nabhBadgeIcon} alt="NABH Accredited Quality Badge" className="brand-badge-img nabh-badge-img" />
+              <img src={nabhBadgeIcon} alt="NABH Accredited Quality Badge" className="brand-badge-img nabh-badge-img nabh-real-img" />
             </div>
           </div>
 
@@ -195,6 +174,23 @@ export default function LoginPage() {
 
         {/* Right Sign In Form Card */}
         <section className="brand-signin-section">
+          {/* Language Selector — sits right above the card */}
+          <div className="lang-selector signin-lang-selector">
+            <button
+              type="button"
+              className={`lang-btn ${lang === 'mr' ? 'active' : ''}`}
+              onClick={() => setLang('mr')}
+            >
+              मराठी
+            </button>
+            <button
+              type="button"
+              className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
+              onClick={() => setLang('en')}
+            >
+              English
+            </button>
+          </div>
           <div className="brand-signin-card">
             <h2 className="signin-title">{t.signInTitle}</h2>
             <p className="signin-subtitle">{t.signInSub}</p>

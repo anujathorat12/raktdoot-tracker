@@ -56,6 +56,23 @@ export async function loginDriver(serverUrl, email, password) {
   return data.data; // { token, user }
 }
 
+export async function registerDriver(serverUrl, { name, email, password, phone }) {
+  const url = `${serverUrl.replace(/\/+$/, '')}/api/auth/register`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password, phone, role: 'driver' }),
+  });
+
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || 'Registration failed. Please try again.');
+  }
+
+  return data.data; // { token, user }
+}
+
+
 export async function getDriverProfile(serverUrl, token, driverId) {
   const url = `${serverUrl.replace(/\/+$/, '')}/api/drivers/${driverId}`;
   const response = await fetch(url, {
