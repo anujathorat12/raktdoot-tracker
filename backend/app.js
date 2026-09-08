@@ -14,10 +14,23 @@ const { errorHandler } = require('./src/middlewares/error.middleware');
 const app = express();
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim());
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:8081,http://localhost:3000')
+  .split(',')
+  .map(o => o.trim());
+
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    // Allow requests without Origin header (curl, mobile apps, native Postman)
+    if (!origin) return cb(null, true);
+
+    // Development: automatically allow localhost, 127.0.0.1, and local private network origins
+    if (process.env.NODE_ENV !== 'production') {
+      if (/^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+        return cb(null, true);
+      }
+    }
+
+    if (allowedOrigins.includes(origin)) return cb(null, true);
     cb(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
