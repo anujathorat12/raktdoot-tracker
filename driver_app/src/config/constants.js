@@ -1,7 +1,9 @@
 import { Platform } from 'react-native';
 
-// Default backend URL based on platform
-export const DEFAULT_SERVER_URL = 'https://raktdoot-backend.onrender.com';
+// Default backend URL: dynamically uses current origin on web or cloud Render backend
+export const DEFAULT_SERVER_URL = (typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null' && !window.location.origin.includes(':8081'))
+  ? window.location.origin
+  : 'https://raktdoot-backend.onrender.com';
 
 export const PRESET_SERVER_URLS = [
   { label: 'Cloud Live (Render)', url: 'https://raktdoot-backend.onrender.com' },
