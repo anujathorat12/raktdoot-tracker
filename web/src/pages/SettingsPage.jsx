@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Settings, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../services/api';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -38,7 +39,7 @@ export default function SettingsPage() {
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>Backend URL</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  {import.meta.env.VITE_API_URL || 'http://localhost:5000'}
+                  {API_URL}
                 </div>
               </div>
             </div>

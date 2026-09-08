@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle, Clock, X, Image, ExternalLink } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
-import api from '../../services/api';
+import api, { API_URL } from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function IssueDetailModal({ issue, onClose }) {
   if (!issue) return null;

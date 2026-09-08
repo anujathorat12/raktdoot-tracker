@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import api, { SOCKET_URL } from '../services/api';
 
 const SocketContext = createContext(null);
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export function SocketProvider({ children }) {
   const { token, user } = useAuth();
@@ -19,10 +19,40 @@ export function SocketProvider({ children }) {
       return;
     }
 
-    const socket = io(SOCKET_URL, { auth: { token }, reconnectionAttempts: 5, reconnectionDelay: 2000 });
+    // 1. Immediately fetch initial drivers & issues via REST API so map loads without waiting for socket
+    if (user.role === 'manager' || user.role === 'admin') {
+      api.get('/drivers')
+        .then(res => {
+          if (res.data?.data && Array.isArray(res.data.data)) {
+            const map = {};
+            res.data.data.forEach(d => { map[d.id] = d; });
+            setFleetDrivers(prev => ({ ...map, ...prev }));
+          }
+        })
+        .catch(err => console.warn('[Fleet] Initial drivers fetch warning:', err.message));
+
+      api.get('/issues')
+        .then(res => {
+          if (res.data?.data && Array.isArray(res.data.data)) {
+            setIssues(res.data.data);
+          }
+        })
+        .catch(err => console.warn('[Fleet] Initial issues fetch warning:', err.message));
+    }
+
+    // 2. Connect Socket with websocket and polling transports for maximum cloud compatibility
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+    });
     socketRef.current = socket;
 
-    socket.on('connect', () => setConnected(true));
+    socket.on('connect', () => {
+      setConnected(true);
+      console.log('[Socket] Connected to backend at', SOCKET_URL);
+    });
     socket.on('disconnect', () => setConnected(false));
     socket.on('connect_error', (err) => console.error('[Socket] connect_error:', err.message));
 
@@ -30,7 +60,7 @@ export function SocketProvider({ children }) {
     socket.on('initial_fleet_state', ({ drivers }) => {
       const map = {};
       drivers.forEach(d => { map[d.id] = d; });
-      setFleetDrivers(map);
+      setFleetDrivers(prev => ({ ...prev, ...map }));
     });
 
     socket.on('fleet_update', (update) => {
