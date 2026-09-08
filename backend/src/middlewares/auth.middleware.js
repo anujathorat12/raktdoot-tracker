@@ -2,6 +2,8 @@
 const jwt = require('jsonwebtoken');
 const { dbGet } = require('../db/database');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'delivery_tracking_super_secret_key_2024';
+
 /**
  * Verifies JWT token and attaches decoded user to req.user.
  */
@@ -13,7 +15,7 @@ function authenticate(req, res, next) {
 
   const token = authHeader.slice(7);
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     // Verify user still exists
     const user = dbGet('SELECT id, name, email, role, phone, avatar_color, is_active FROM users WHERE id = ?', [decoded.id]);
     if (!user || !user.is_active) {

@@ -1,5 +1,6 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import Footer from './Footer';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AppShell() {
@@ -10,8 +11,12 @@ export default function AppShell() {
     <div className="app-shell">
       <Sidebar />
       <main className="main-content">
-        <Outlet />
+        <div className="main-body">
+          <Outlet />
+        </div>
+        <Footer />
       </main>
     </div>
   );
 }
+

@@ -5,9 +5,10 @@ const { v4: uuidv4 } = require('uuid');
 const { dbGet, dbRun } = require('../../db/database');
 
 const SALT_ROUNDS = 10;
+const JWT_SECRET = process.env.JWT_SECRET || 'delivery_tracking_super_secret_key_2024';
 
 function signToken(userId) {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: userId }, JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 }
