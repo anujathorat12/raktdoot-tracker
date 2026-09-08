@@ -1,0 +1,13 @@
+<svg width="80" height="96" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="dropGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#DC2626" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Blood Drop Shape -->
+  <path d="M50 4C50 4 8 48 8 78C8 101.2 26.8 120 50 120C73.2 120 92 101.2 92 78C92 48 50 4 50 4Z" fill="#EE2A35" filter="url(#dropGlow)"/>
+
+  <!-- Om Symbol -->
+  <text x="50" y="86" text-anchor="middle" fill="#FFFFFF" font-family="'Samskrit', 'Mangal', 'Arial Unicode MS', serif" font-size="44" font-weight="900">ॐ</text>
+</svg>

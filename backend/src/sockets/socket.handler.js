@@ -36,7 +36,8 @@ function initSocket(httpServer) {
     if (!token) return next(new Error('Socket: No auth token provided.'));
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const jwtSecret = process.env.JWT_SECRET || 'delivery_tracking_super_secret_key_2024';
+      const decoded = jwt.verify(token, jwtSecret);
       const user = dbGet(
         'SELECT id, name, email, role, avatar_color FROM users WHERE id = ? AND is_active = 1',
         [decoded.id]
