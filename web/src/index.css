@@ -1454,21 +1454,14 @@ tbody td:first-child { color: var(--text-primary); font-weight: 500; }
   z-index: 0;
 }
 
-/* Header (Top Right Stacked) */
+/* Header — Harbinger logo, top-right */
 .brand-login-header {
   position: relative;
   z-index: 2;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 12px 48px 0;
-}
-
-.header-right-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  padding: 14px 48px 0;
 }
 
 /* Harbinger Group Logo */
@@ -1528,23 +1521,33 @@ tbody td:first-child { color: var(--text-primary); font-weight: 500; }
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
-  padding: 0 48px;
+  padding: 20px 48px 0;
   gap: 48px;
 }
 
-/* Left Section - Jankalyan Logos & Content (Higher Up) */
+/* Left Section — anchored to top */
 .brand-info-section {
   flex: 1;
-  max-width: 620px;
+  max-width: 580px;
   padding-top: 0;
-  margin-top: -24px;
+  margin-top: 0;
 }
 
-/* Right Section - Sign In Box (1 Line Space Below Toggle) */
+/* Right Section — self-centers vertically beside left content, fills ~half */
 .brand-signin-section {
-  width: 390px;
+  width: 420px;
   flex-shrink: 0;
-  margin-top: 12px;
+  margin-top: 0;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Toggle anchored right, flush above the card */
+.signin-lang-selector {
+  align-self: flex-end;
 }
 
 .brand-badges-row {
@@ -1577,6 +1580,14 @@ tbody td:first-child { color: var(--text-primary); font-weight: 500; }
   width: 68px;
   filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.6));
 }
+
+.nabh-real-img {
+  height: 80px;
+  width: 80px;
+  filter: drop-shadow(0 0 16px rgba(11, 79, 156, 0.5)) drop-shadow(0 0 6px rgba(220, 38, 38, 0.35));
+}
+
+
 
 .centre-title {
   font-size: 24px;
@@ -1704,6 +1715,7 @@ tbody td:first-child { color: var(--text-primary); font-weight: 500; }
 
 /* Right Column Sign In Card */
 .brand-signin-card {
+  width: 100%;
   background: #0f111a;
   border: 1.5px solid #dc2626;
   border-radius: 16px;
