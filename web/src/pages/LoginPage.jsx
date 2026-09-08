@@ -13,7 +13,7 @@ import {
 const translations = {
   en: {
     centreTitle: 'Jankalyan Blood Centre, Pune',
-    tag: 'Raktdoot Tracker',
+    tag: 'RAKTDOOT TRACKER',
     heroLine1: 'Safe Blood Supply &',
     heroLine2: 'Real-Time Fleet Tracking',
     subtitle: 'Advanced digital platform for real-time monitoring of cold-chain blood transport and emergency hospital delivery across Pune.',
@@ -25,7 +25,7 @@ const translations = {
     ],
     helpline: '24x7 Helpline: 020-24449527, 020-24444502',
     signInTitle: 'Sign In',
-    signInSub: 'Enter your credentials to access Raktdoot Portal',
+    signInSub: 'Enter your credentials to access RAKTDOOT TRACKER Portal',
     emailLabel: 'EMAIL ADDRESS / USER ID',
     passwordLabel: 'PASSWORD',
     submitBtn: 'Sign In',
@@ -33,7 +33,7 @@ const translations = {
   },
   mr: {
     centreTitle: 'जनकल्याण रक्तपेढी, पुणे',
-    tag: 'रक्तदूत (Raktdoot Tracker)',
+    tag: 'रक्तदूत (RAKTDOOT TRACKER)',
     heroLine1: 'सुरक्षित रक्त पुरवठा व',
     heroLine2: 'रियल-टाईम व्हईकल ट्रॅकिंग',
     subtitle: 'जनकल्याण रक्तपेढी, पुणे अंतर्गत आणीबाणीच्या प्रसंगी हॉस्पिटल व रुग्णांपर्यंत जलद, तापमान-नियंत्रित व सुरक्षित रक्त पिशव्या पोहोचवण्याची अद्ययावत डिजिटल प्रणाली.',

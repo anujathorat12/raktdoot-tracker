@@ -46,7 +46,7 @@ export default function Sidebar() {
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">🚚</div>
         <div>
-          <div className="sidebar-logo-text">DeliveryTrack</div>
+          <div className="sidebar-logo-text">RAKTDOOT TRACKER</div>
           <div className="sidebar-logo-sub">Fleet Management</div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-# 🚚 Real-Time Delivery Tracking System
+# 🩸 RAKTDOOT TRACKER — Real-Time Fleet Management System
 
 A **zero-cost, enterprise-grade** fleet management platform with live GPS tracking, incident reporting, and role-based dashboards.
 
@@ -60,11 +60,6 @@ npx expo start          # Run on physical phone via Expo Go or Android Emulator
 
 ---
 
-## 🎮 In-Browser GPS Simulator
-
-No physical device needed! Open the web portal as Manager/Admin and click **🎮 Simulate** in the Fleet Map topbar to stream live GPS data directly from your browser.
-
----
 
 ## ✨ Features
 
@@ -88,7 +83,6 @@ No physical device needed! Open the web portal as Manager/Admin and click **🎮
 - ✅ Real-time issue feed with photo thumbnails + resolve action
 - ✅ Admin user management (CRUD, search, filter, pagination)
 - ✅ System telemetry dashboard (memory bar, uptime, socket count)
-- ✅ GPS Simulator modal (no device needed!)
 - ✅ Fully responsive design
 
 ### Driver APK (Flutter)
