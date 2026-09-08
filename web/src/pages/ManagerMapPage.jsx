@@ -18,9 +18,6 @@ export default function ManagerMapPage() {
     }
   }, [user]);
 
-  const activeCount = fleetDriversList.filter(d => d.status === 'active').length;
-  const issueCount = fleetDriversList.filter(d => d.status === 'issue').length;
-
   return (
     <div className="page-content-full">
       {/* Topbar */}
@@ -29,11 +26,6 @@ export default function ManagerMapPage() {
         <div>
           <div className="topbar-title">Fleet Map</div>
           <div className="topbar-subtitle">Real-time GPS tracking · {fleetDriversList.length} drivers</div>
-        </div>
-        {/* Quick stats */}
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginLeft: 'auto' }}>
-          <span className="badge badge-active"><span className="badge-dot pulse" />{activeCount} Active</span>
-          {issueCount > 0 && <span className="badge badge-issue"><span className="badge-dot" />{issueCount} Issue{issueCount > 1 ? 's' : ''}</span>}
         </div>
       </div>
 
