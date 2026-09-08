@@ -44,9 +44,19 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // ─── STATIC: UPLOADED ISSUE PHOTOS ───────────────────────────────────────────
 app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
 
-// ─── HEALTH CHECK ─────────────────────────────────────────────────────────────
+// ─── ROOT & HEALTH CHECK ───────────────────────────────────────────────────────
+app.get('/', (_req, res) => {
+  res.json({
+    success: true,
+    name: 'RAKTDOOT TRACKER API',
+    status: 'online',
+    message: 'Backend API is running successfully!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'delivery-tracking-api' });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'raktdoot-tracking-api' });
 });
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
