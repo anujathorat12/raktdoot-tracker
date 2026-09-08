@@ -23,14 +23,16 @@ app.use(cors({
     // Allow requests without Origin header (curl, mobile apps, native Postman)
     if (!origin) return cb(null, true);
 
-    // Development: automatically allow localhost, 127.0.0.1, and local private network origins
-    if (process.env.NODE_ENV !== 'production') {
-      if (/^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
-        return cb(null, true);
-      }
+    // Automatically allow localhost, 127.0.0.1, and local private network origins
+    if (/^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+      return cb(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) return cb(null, true);
+    // Allow wildcard, specific configured origin, or any onrender.com origin
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
+      return cb(null, true);
+    }
+
     cb(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,

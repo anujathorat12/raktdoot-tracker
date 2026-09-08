@@ -23,7 +23,13 @@ function initSocket(httpServer) {
 
   io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
+          return cb(null, true);
+        }
+        cb(null, true);
+      },
       credentials: true,
     },
     pingTimeout: 30000,
