@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Alert, Switch, Platform
+  ScrollView, Alert, Switch, Platform, ActivityIndicator
 } from 'react-native';
-import * as Location from 'expo-location';
 import { STATUS_COLORS } from '../config/constants';
 import { socketManager } from '../services/socket';
 import { createIssue, getDriverIssues } from '../services/api';
 import { LocationSimulator } from '../services/locationSimulator';
+import { getExactCurrentLocation, startLocationWatcher, requestLocationPermissions } from '../services/realLocation';
 import ReportIssueModal from '../components/ReportIssueModal';
 import IssuesHistoryModal from '../components/IssuesHistoryModal';
 
@@ -19,13 +19,17 @@ export default function DriverDashboardScreen({
 }) {
   const [driverStatus, setDriverStatus] = useState('active'); // active, idle, offline
   const [socketConnected, setSocketConnected] = useState(false);
-  const [useSimulator, setUseSimulator] = useState(true);
+  const [useSimulator, setUseSimulator] = useState(false); // Default to REAL DEVICE GPS
+  const [gpsStatus, setGpsStatus] = useState('acquiring'); // acquiring, locked, denied, error
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
+  const [gpsErrorMsg, setGpsErrorMsg] = useState('');
+  const [isRefreshingGps, setIsRefreshingGps] = useState(false);
   const [currentTelemetry, setCurrentTelemetry] = useState({
     lat: 19.0760,
     lng: 72.8777,
     speed: 0,
     heading: 0,
-    address: 'Bandra West Logistics Hub',
+    address: 'Acquiring Real Device GPS...',
   });
   const [pingsCount, setPingsCount] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState(new Date());
@@ -37,7 +41,7 @@ export default function DriverDashboardScreen({
 
   // Simulator & GPS tracking references
   const simulatorRef = useRef(new LocationSimulator());
-  const locationSubRef = useRef(null);
+  const watcherCleanupRef = useRef(null);
   const intervalRef = useRef(null);
 
   // ── Helper: Stop tracking ──
@@ -46,9 +50,9 @@ export default function DriverDashboardScreen({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (locationSubRef.current) {
-      locationSubRef.current.remove();
-      locationSubRef.current = null;
+    if (watcherCleanupRef.current) {
+      watcherCleanupRef.current();
+      watcherCleanupRef.current = null;
     }
   }, []);
 
@@ -77,6 +81,7 @@ export default function DriverDashboardScreen({
     if (driverStatus === 'offline') return;
 
     if (useSimulator) {
+      setGpsStatus('simulated');
       // Send first telemetry point immediately!
       const initialPoint = simulatorRef.current.getNextPoint();
       transmitLocation(initialPoint, driverStatus);
@@ -87,43 +92,69 @@ export default function DriverDashboardScreen({
         transmitLocation(nextPoint, driverStatus);
       }, 3000);
     } else {
-      // Real Hardware GPS via Expo Location
-      (async () => {
-        try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert(
-              'Permission Required',
-              'Location permission denied. Switching to Route Simulator mode.',
-              [{ text: 'OK', onPress: () => setUseSimulator(true) }]
-            );
-            return;
-          }
+      // Real Hardware / Browser GPS via realLocation service
+      setGpsStatus('acquiring');
+      setGpsErrorMsg('');
 
-          locationSubRef.current = await Location.watchPositionAsync(
-            {
-              accuracy: Location.Accuracy.High,
-              timeInterval: 3000,
-              distanceInterval: 5,
-            },
-            (pos) => {
-              const point = {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                speed: Math.max(0, (pos.coords.speed || 0) * 3.6), // m/s to km/h
-                heading: pos.coords.heading || 0,
-                address: 'Real Device GPS Tracking',
-              };
-              transmitLocation(point, driverStatus);
-            }
-          );
-        } catch (err) {
-          console.warn('[GPS] Error watching position:', err);
-          setUseSimulator(true);
+      const cleanup = startLocationWatcher(
+        (location) => {
+          setGpsStatus('locked');
+          setGpsAccuracy(location.accuracy);
+          setGpsErrorMsg('');
+          transmitLocation(location, driverStatus);
+        },
+        (err) => {
+          console.warn('[GPS Watcher Error]:', err.message);
+          if (err.message.includes('denied') || err.message.includes('permission')) {
+            setGpsStatus('denied');
+            setGpsErrorMsg('Location access was denied. Please allow GPS permission in your browser/device.');
+          } else {
+            setGpsStatus('error');
+            setGpsErrorMsg(err.message || 'GPS signal unavailable');
+          }
         }
-      })();
+      );
+
+      watcherCleanupRef.current = cleanup;
     }
   }, [driverStatus, useSimulator, transmitLocation, stopTracking]);
+
+  // ── Helper: Manual GPS Refresh / Acquire ──
+  const handleRefreshExactGps = async () => {
+    if (useSimulator) {
+      const nextPoint = simulatorRef.current.getNextPoint();
+      transmitLocation(nextPoint, driverStatus);
+      return;
+    }
+
+    setIsRefreshingGps(true);
+    setGpsErrorMsg('');
+    try {
+      const loc = await getExactCurrentLocation();
+      setGpsStatus('locked');
+      setGpsAccuracy(loc.accuracy);
+      transmitLocation(loc, driverStatus);
+      if (Platform.OS === 'web') {
+        // Light notification on web
+        console.log('[GPS Locked]', loc.address);
+      } else {
+        Alert.alert('GPS Locked', `Accurate location acquired: ${loc.address} (±${loc.accuracy}m)`);
+      }
+    } catch (err) {
+      setGpsStatus('error');
+      setGpsErrorMsg(err.message);
+      Alert.alert(
+        'GPS Acquisition Notice',
+        `${err.message}\n\nYou can grant permission or toggle Route Simulator mode below for testing.`,
+        [
+          { text: 'Switch to Simulator', onPress: () => setUseSimulator(true) },
+          { text: 'Retry', onPress: () => handleRefreshExactGps() }
+        ]
+      );
+    } finally {
+      setIsRefreshingGps(false);
+    }
+  };
 
   // ── Helper: Load issues from REST API ──
   const loadIssues = useCallback(async () => {
@@ -141,8 +172,20 @@ export default function DriverDashboardScreen({
         socketManager.emitStatusChange(driverStatus);
         // Transmit immediate GPS location on connect
         if (driverStatus !== 'offline') {
-          const pt = simulatorRef.current.getNextPoint();
-          transmitLocation(pt, driverStatus);
+          if (useSimulator) {
+            const pt = simulatorRef.current.getNextPoint();
+            transmitLocation(pt, driverStatus);
+          } else {
+            getExactCurrentLocation()
+              .then(loc => {
+                setGpsStatus('locked');
+                setGpsAccuracy(loc.accuracy);
+                transmitLocation(loc, driverStatus);
+              })
+              .catch(err => {
+                console.warn('[GPS Connect Error]', err.message);
+              });
+          }
         }
       }
     });
@@ -153,7 +196,7 @@ export default function DriverDashboardScreen({
       stopTracking();
       socketManager.disconnect();
     };
-  }, [serverUrl, token, driverStatus, transmitLocation, stopTracking, loadIssues]);
+  }, [serverUrl, token, driverStatus, useSimulator, transmitLocation, stopTracking, loadIssues]);
 
   // ── Effect 2: Restart tracking when status or simulator mode changes ──
   useEffect(() => {
@@ -280,7 +323,54 @@ export default function DriverDashboardScreen({
 
         {/* Live Telemetry HUD */}
         <View style={styles.hudCard}>
-          <Text style={styles.hudTitle}>Live Vehicle Telemetry</Text>
+          <View style={styles.hudHeader}>
+            <Text style={styles.hudTitle}>Live Vehicle Telemetry</Text>
+            {useSimulator ? (
+              <View style={[styles.gpsBadge, { backgroundColor: '#f59e0b22', borderColor: '#f59e0b' }]}>
+                <Text style={[styles.gpsBadgeText, { color: '#f59e0b' }]}>🎮 Demo Simulator</Text>
+              </View>
+            ) : gpsStatus === 'locked' ? (
+              <View style={[styles.gpsBadge, { backgroundColor: '#10b98122', borderColor: '#10b981' }]}>
+                <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
+                <Text style={[styles.gpsBadgeText, { color: '#10b981' }]}>
+                  GPS Locked {gpsAccuracy ? `(±${gpsAccuracy}m)` : ''}
+                </Text>
+              </View>
+            ) : gpsStatus === 'denied' ? (
+              <View style={[styles.gpsBadge, { backgroundColor: '#ef444422', borderColor: '#ef4444' }]}>
+                <Text style={[styles.gpsBadgeText, { color: '#ef4444' }]}>⚠️ Permission Denied</Text>
+              </View>
+            ) : (
+              <View style={[styles.gpsBadge, { backgroundColor: '#6366f122', borderColor: '#6366f1' }]}>
+                <ActivityIndicator size="small" color="#818cf8" style={{ transform: [{ scale: 0.7 }] }} />
+                <Text style={[styles.gpsBadgeText, { color: '#818cf8' }]}>Acquiring GPS...</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Location Permission Denied Alert Card */}
+          {gpsStatus === 'denied' && !useSimulator && (
+            <View style={styles.gpsDeniedBox}>
+              <Text style={styles.gpsDeniedTitle}>📍 Location Access Required</Text>
+              <Text style={styles.gpsDeniedText}>
+                {gpsErrorMsg || 'Browser or device GPS permission is blocked. Please allow location access in your browser address bar (lock icon) to transmit your real position.'}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                <TouchableOpacity
+                  style={[styles.smallActionBtn, { backgroundColor: '#4f46e5' }]}
+                  onPress={handleRefreshExactGps}
+                >
+                  <Text style={styles.smallActionBtnText}>Retry Permission</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.smallActionBtn, { backgroundColor: '#334155' }]}
+                  onPress={() => setUseSimulator(true)}
+                >
+                  <Text style={styles.smallActionBtnText}>Use Simulator Instead</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           <View style={styles.hudGrid}>
             {/* Speedometer */}
@@ -302,18 +392,39 @@ export default function DriverDashboardScreen({
             </View>
           </View>
 
-          {/* Coordinates & Route */}
+          {/* Coordinates & Physical Address */}
           <View style={styles.routeBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <Text style={{ fontSize: 13 }}>📍</Text>
-              <Text style={styles.coordsText}>
-                {currentTelemetry.lat.toFixed(5)}, {currentTelemetry.lng.toFixed(5)}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 13 }}>📍</Text>
+                <Text style={styles.coordsText}>
+                  {currentTelemetry.lat ? currentTelemetry.lat.toFixed(5) : '0.00000'}, {currentTelemetry.lng ? currentTelemetry.lng.toFixed(5) : '0.00000'}
+                </Text>
+              </View>
+              <View style={styles.liveTag}>
+                <Text style={styles.liveTagText}>EXACT GPS</Text>
+              </View>
             </View>
             <Text style={styles.addressText} numberOfLines={2}>
-              {currentTelemetry.address}
+              {currentTelemetry.address || 'Resolving physical location...'}
             </Text>
           </View>
+
+          {/* Quick Tactile GPS Refresh Button */}
+          <TouchableOpacity
+            style={[styles.refreshGpsBtn, isRefreshingGps && { opacity: 0.7 }]}
+            onPress={handleRefreshExactGps}
+            disabled={isRefreshingGps}
+          >
+            {isRefreshingGps ? (
+              <ActivityIndicator size="small" color="#ffffff" style={{ marginRight: 8 }} />
+            ) : (
+              <Text style={{ fontSize: 15, marginRight: 6 }}>🎯</Text>
+            )}
+            <Text style={styles.refreshGpsBtnText}>
+              {isRefreshingGps ? 'Locking Real Physical GPS...' : 'Acquire / Refresh Exact GPS'}
+            </Text>
+          </TouchableOpacity>
 
           {/* Pings & Sync */}
           <View style={styles.metaRow}>
@@ -325,11 +436,11 @@ export default function DriverDashboardScreen({
         {/* GPS Tracking Mode Toggle */}
         <View style={styles.simulatorCard}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={styles.simulatorTitle}>Route Simulation Mode</Text>
+            <Text style={styles.simulatorTitle}>Route Simulation Mode (Demo Only)</Text>
             <Text style={styles.simulatorSub}>
               {useSimulator
                 ? 'Simulating realistic Mumbai logistics driving (Bandra ➔ Andheri ➔ BKC)'
-                : 'Using physical device GPS sensor'}
+                : 'Using real hardware / browser GPS sensor at your actual location'}
             </Text>
           </View>
           <Switch
@@ -666,4 +777,87 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  hudHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  gpsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  gpsBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  gpsDeniedBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  gpsDeniedTitle: {
+    color: '#ef4444',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  gpsDeniedText: {
+    color: '#fca5a5',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  smallActionBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  smallActionBtnText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  liveTag: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderColor: '#10b981',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  liveTagText: {
+    color: '#10b981',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  refreshGpsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4f46e5',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  refreshGpsBtnText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
+

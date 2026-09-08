@@ -43,7 +43,9 @@ export function SocketProvider({ children }) {
           avatar_color: update.avatar_color,
           lat: update.lat, lng: update.lng,
           speed: update.speed, heading: update.heading,
-          status: update.status, updated_at: update.updated_at,
+          status: update.status,
+          address: update.address !== undefined ? update.address : prev[update.driver_id]?.address,
+          updated_at: update.updated_at,
         },
       }));
     });

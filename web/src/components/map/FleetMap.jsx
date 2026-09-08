@@ -109,18 +109,35 @@ function MapInstanceBridge({ onMapReady }) {
   return null;
 }
 
-// Auto-fit bounds on first load
-function BoundsController({ drivers, selectedId }) {
+// Auto-fit bounds on first load or auto-focus active driver
+function BoundsController({ drivers, selectedId, onActiveDriverFound }) {
   const map = useMap();
   const fitted = useRef(false);
+  const lastActiveDriverId = useRef(null);
 
   useEffect(() => {
-    if (!fitted.current && drivers.length > 0 && !selectedId) {
-      const validDrivers = drivers.filter(d => d.lat && d.lng && (d.lat !== 0 || d.lng !== 0));
-      if (validDrivers.length > 0) {
+    const validDrivers = drivers.filter(d => d.lat && d.lng && (d.lat !== 0 || d.lng !== 0));
+    if (validDrivers.length === 0) return;
+
+    const activeDrivers = validDrivers.filter(d => d.status === 'active' || d.status === 'issue');
+
+    // 1. Initial Load: center on active driver if exists, else fit all drivers
+    if (!fitted.current && !selectedId) {
+      if (activeDrivers.length > 0) {
+        const topDriver = activeDrivers[0];
+        map.flyTo([topDriver.lat, topDriver.lng], 15, { animate: true, duration: 1.0 });
+        lastActiveDriverId.current = topDriver.id;
+      } else {
         const bounds = L.latLngBounds(validDrivers.map(d => [d.lat, d.lng]));
         map.fitBounds(bounds.pad(0.2), { animate: true });
-        fitted.current = true;
+      }
+      fitted.current = true;
+    } else if (!selectedId && activeDrivers.length > 0) {
+      // 2. An active driver just went online or updated location!
+      const topDriver = activeDrivers[0];
+      if (lastActiveDriverId.current !== topDriver.id) {
+        map.flyTo([topDriver.lat, topDriver.lng], 15, { animate: true, duration: 1.0 });
+        lastActiveDriverId.current = topDriver.id;
       }
     }
   }, [drivers, selectedId, map]);
@@ -134,6 +151,7 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
   const markerRefs = useRef({});
 
   const validDrivers = fleetDriversList.filter(d => d.lat && d.lng && (d.lat !== 0 || d.lng !== 0));
+  const activeDrivers = validDrivers.filter(d => d.status === 'active' || d.status === 'issue');
 
   // Programmatically fly to and pop open driver marker
   const focusOnDriver = useCallback((driverId, zoom = 16) => {
@@ -179,6 +197,15 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
     }
   }, [mapInstance, onSelectDriver, validDrivers]);
 
+  // Quick action: center on active driver
+  const handleFocusActive = useCallback(() => {
+    if (activeDrivers.length > 0) {
+      const target = activeDrivers[0];
+      onSelectDriver?.(target.id);
+      focusOnDriver(target.id, 16);
+    }
+  }, [activeDrivers, onSelectDriver, focusOnDriver]);
+
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative', overflow: 'hidden' }}>
       <style>{`
@@ -213,6 +240,68 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
         onResetView={handleResetView}
       />
 
+      {/* Live Active Driver Floating Alert Chip */}
+      {activeDrivers.length > 0 && (
+        <div style={{
+          position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 1000, display: 'flex', alignItems: 'center', gap: 8,
+          background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 24,
+          padding: '6px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+        }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+          <span style={{ fontSize: 12, color: '#f8fafc', fontWeight: 600 }}>
+            Active Driver: <span style={{ color: '#34d399' }}>{activeDrivers[0].name}</span>
+            {activeDrivers[0].address ? ` · ${activeDrivers[0].address.slice(0, 28)}...` : ''}
+          </span>
+          <button
+            onClick={() => {
+              onSelectDriver?.(activeDrivers[0].id);
+              focusOnDriver(activeDrivers[0].id, 16);
+            }}
+            style={{
+              background: '#4f46e5', border: 'none', borderRadius: 12,
+              color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 10px',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            🎯 Focus
+          </button>
+        </div>
+      )}
+
+      {/* Floating Map Action Quick-Controls (Bottom-Left) */}
+      <div style={{
+        position: 'absolute', bottom: 20, left: 20, zIndex: 1000,
+        display: 'flex', gap: 8,
+      }}>
+        {activeDrivers.length > 0 && (
+          <button
+            onClick={handleFocusActive}
+            style={{
+              background: '#10b981', border: 'none', borderRadius: 10,
+              color: '#042f1a', fontSize: 12, fontWeight: 700, padding: '8px 14px',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+            }}
+          >
+            🎯 Center Active Driver
+          </button>
+        )}
+        <button
+          onClick={handleResetView}
+          style={{
+            background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: 10,
+            color: '#cbd5e1', fontSize: 12, fontWeight: 600, padding: '8px 14px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+            boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+          }}
+        >
+          🌐 Fit All Fleet
+        </button>
+      </div>
+
       <MapContainer
         center={[19.076, 72.8777]}
         zoom={13}
@@ -243,7 +332,7 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
             }}
           >
             <Popup>
-              <div style={{ minWidth: 220, fontFamily: 'Inter, sans-serif' }}>
+              <div style={{ minWidth: 240, fontFamily: 'Inter, sans-serif' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                   <div style={{
                     width: 38, height: 38, borderRadius: 10,
@@ -275,9 +364,25 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
                   </div>
                   <div style={{ color: '#94a3b8' }}>Coordinates</div>
                   <div style={{ color: '#f8fafc', fontFamily: 'monospace', fontSize: 10 }}>
-                    {driver.lat?.toFixed(4)}, {driver.lng?.toFixed(4)}
+                    {driver.lat?.toFixed(5)}, {driver.lng?.toFixed(5)}
                   </div>
                 </div>
+
+                {driver.address && (
+                  <div style={{
+                    marginTop: 8, padding: '6px 8px',
+                    background: 'rgba(255,255,255,0.06)',
+                    borderRadius: 6,
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}>
+                    <div style={{ fontSize: 10, color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>
+                      📍 Exact Physical Location
+                    </div>
+                    <div style={{ fontSize: 11, color: '#f8fafc', lineHeight: 1.3 }}>
+                      {driver.address}
+                    </div>
+                  </div>
+                )}
 
                 {driver.phone && (
                   <div style={{
@@ -322,3 +427,4 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
     </div>
   );
 }
+

@@ -246,11 +246,12 @@ async function runTests() {
           // Driver sends live location update
           setTimeout(() => {
             driverSocket.emit('location_update', {
-              lat: 19.0760,
-              lng: 72.8777,
+              lat: 18.5204,
+              lng: 73.8567,
               speed: 46.5,
               heading: 180,
               status: 'active',
+              address: 'FC Road, Shivaji Nagar, Pune',
             });
           }, 300);
         });
@@ -260,16 +261,17 @@ async function runTests() {
       managerSocket.on('fleet_update', (update) => {
         if (update.driver_id === driverUser.id) {
           assert(true, `Manager received real-time fleet_update for driver ${update.driver_name}`);
-          assert(update.lat === 19.0760 && update.lng === 72.8777, 'GPS coordinates match emitted telemetry (19.0760, 72.8777)');
+          assert(update.lat === 18.5204 && update.lng === 73.8567, 'GPS coordinates match emitted telemetry (18.5204, 73.8567)');
           assert(update.speed === 46.5, 'Speed matches emitted telemetry (46.5 km/h)');
+          assert(update.address === 'FC Road, Shivaji Nagar, Pune', 'Manager received exact physical address: "FC Road, Shivaji Nagar, Pune"');
 
           // Now test issue reporting
           driverSocket.emit('issue_reported', {
             type: 'vehicle_breakdown',
             description: 'Flat tire on Western Express Highway',
             severity: 'critical',
-            lat: 19.0760,
-            lng: 72.8777,
+            lat: 18.5204,
+            lng: 73.8567,
           });
         }
       });
@@ -330,6 +332,7 @@ async function runTests() {
       'src/services/api.js',
       'src/services/socket.js',
       'src/services/locationSimulator.js',
+      'src/services/realLocation.js',
       'src/screens/LoginScreen.js',
       'src/screens/DriverDashboardScreen.js',
       'src/components/ReportIssueModal.js',

@@ -1,0 +1,277 @@
+import { Platform } from 'react-native';
+import * as Location from 'expo-location';
+
+/**
+ * Cache for reverse-geocoded coordinates to prevent redundant network calls
+ */
+const geocodeCache = new Map();
+
+/**
+ * Reverse geocode latitude and longitude to a human-readable address
+ * using OpenStreetMap Nominatim with caching and fallback.
+ */
+export async function reverseGeocodeCoords(lat, lng) {
+  if (lat == null || lng == null) return 'Unknown Location';
+
+  const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+  if (geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey);
+  }
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'DeliveryTrackingSystem/1.0',
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.address) {
+        const addr = data.address;
+        const parts = [
+          addr.road || addr.street || addr.suburb || addr.neighbourhood,
+          addr.city || addr.town || addr.village || addr.county,
+          addr.state,
+        ].filter(Boolean);
+
+        const formatted = parts.length > 0
+          ? parts.join(', ')
+          : (data.display_name?.split(',').slice(0, 3).join(',') || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
+
+        geocodeCache.set(cacheKey, formatted);
+        return formatted;
+      }
+    }
+  } catch (err) {
+    console.warn('[GPS] Reverse geocoding fetch failed, using coordinates fallback:', err.message);
+  }
+
+  const fallback = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+  geocodeCache.set(cacheKey, fallback);
+  return fallback;
+}
+
+/**
+ * Request GPS permissions on Web or Mobile
+ */
+export async function requestLocationPermissions() {
+  if (Platform.OS === 'web') {
+    if (!navigator.geolocation) {
+      return { granted: false, error: 'Geolocation is not supported by your browser.' };
+    }
+    // Web browsers prompt upon the first getCurrentPosition call
+    return { granted: true };
+  } else {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      return { granted: status === 'granted' };
+    } catch (err) {
+      return { granted: false, error: err.message };
+    }
+  }
+}
+
+/**
+ * Helper to fetch web position with graceful fallback from High Accuracy to Standard
+ * Prevents timeouts on laptops/desktops lacking dedicated GPS hardware.
+ */
+function acquireWebPosition(timeoutMs = 6000) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      return reject(new Error('Geolocation is not supported by this browser.'));
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (err) => {
+        // If high accuracy times out (code 3) or position unavailable (code 2), fallback to standard Wi-Fi/IP geolocation
+        if (err.code === 3 || err.code === 2) {
+          navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
+          );
+        } else {
+          reject(err);
+        }
+      },
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 10000 }
+    );
+  });
+}
+
+/**
+ * Acquire exact, high-accuracy current GPS location from hardware / browser
+ */
+export async function getExactCurrentLocation() {
+  if (Platform.OS === 'web') {
+    try {
+      const position = await acquireWebPosition(6000);
+      const { latitude, longitude, speed, heading, accuracy } = position.coords;
+      const address = await reverseGeocodeCoords(latitude, longitude);
+
+      return {
+        lat: latitude,
+        lng: longitude,
+        speed: Math.max(0, (speed || 0) * 3.6), // m/s to km/h
+        heading: heading || 0,
+        accuracy: Math.round(accuracy || 0),
+        address,
+        timestamp: position.timestamp,
+      };
+    } catch (error) {
+      let msg = 'Unable to retrieve location.';
+      if (error.code === 1) msg = 'Location access denied. Please allow GPS permission in your browser address bar.';
+      else if (error.code === 2) msg = 'Location unavailable. Please check network or GPS.';
+      else if (error.code === 3) msg = 'Location request timed out. Please try again or use simulator.';
+      throw new Error(msg);
+    }
+  } else {
+    // Native (iOS / Android)
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      throw new Error('Foreground location permission was denied.');
+    }
+
+    const pos = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+    });
+
+    const { latitude, longitude, speed, heading, accuracy } = pos.coords;
+    const address = await reverseGeocodeCoords(latitude, longitude);
+
+    return {
+      lat: latitude,
+      lng: longitude,
+      speed: Math.max(0, (speed || 0) * 3.6),
+      heading: heading || 0,
+      accuracy: Math.round(accuracy || 0),
+      address,
+      timestamp: pos.timestamp,
+    };
+  }
+}
+
+/**
+ * Continuous real-time GPS location watcher
+ * Supports continuous streaming on both Web and Mobile
+ */
+export function startLocationWatcher(onLocation, onError) {
+  let isStopped = false;
+  let webWatchId = null;
+  let webPollInterval = null;
+  let nativeSubscription = null;
+
+  if (Platform.OS === 'web') {
+    if (!navigator.geolocation) {
+      onError?.(new Error('Geolocation not supported'));
+      return () => {};
+    }
+
+    const handleWebCoords = async (coords, timestamp) => {
+      if (isStopped) return;
+      const address = await reverseGeocodeCoords(coords.latitude, coords.longitude);
+      if (isStopped) return;
+
+      onLocation({
+        lat: coords.latitude,
+        lng: coords.longitude,
+        speed: Math.max(0, (coords.speed || 0) * 3.6),
+        heading: coords.heading || 0,
+        accuracy: Math.round(coords.accuracy || 0),
+        address,
+        timestamp,
+      });
+    };
+
+    // 1. Immediate acquisition with fallback
+    acquireWebPosition(6000)
+      .then(pos => handleWebCoords(pos.coords, pos.timestamp))
+      .catch(err => {
+        if (err.code === 1) {
+          onError?.(new Error('Location access denied. Please grant permission.'));
+        }
+      });
+
+    // 2. Continuous watch with standard + high accuracy tolerance
+    webWatchId = navigator.geolocation.watchPosition(
+      (pos) => handleWebCoords(pos.coords, pos.timestamp),
+      () => {}, // Silent error on watch fallback
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
+    );
+
+    // 3. Periodic polling every 3.5 seconds to guarantee updates on stationary desktops/laptops
+    webPollInterval = setInterval(() => {
+      if (isStopped) return;
+      acquireWebPosition(4000)
+        .then(pos => handleWebCoords(pos.coords, pos.timestamp))
+        .catch(() => {}); // Periodic catch
+    }, 3500);
+
+    return () => {
+      isStopped = true;
+      if (webWatchId !== null) navigator.geolocation.clearWatch(webWatchId);
+      if (webPollInterval !== null) clearInterval(webPollInterval);
+    };
+  } else {
+    // Native (iOS / Android)
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          onError?.(new Error('Location permission denied'));
+          return;
+        }
+
+        // Immediate first point
+        const first = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        if (!isStopped) {
+          const address = await reverseGeocodeCoords(first.coords.latitude, first.coords.longitude);
+          onLocation({
+            lat: first.coords.latitude,
+            lng: first.coords.longitude,
+            speed: Math.max(0, (first.coords.speed || 0) * 3.6),
+            heading: first.coords.heading || 0,
+            accuracy: Math.round(first.coords.accuracy || 0),
+            address,
+            timestamp: first.timestamp,
+          });
+        }
+
+        // Continuous watch with distanceInterval: 0 to catch stationary heartbeats
+        nativeSubscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 3000,
+            distanceInterval: 0,
+          },
+          async (pos) => {
+            if (isStopped) return;
+            const address = await reverseGeocodeCoords(pos.coords.latitude, pos.coords.longitude);
+            if (isStopped) return;
+
+            onLocation({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              speed: Math.max(0, (pos.coords.speed || 0) * 3.6),
+              heading: pos.coords.heading || 0,
+              accuracy: Math.round(pos.coords.accuracy || 0),
+              address,
+              timestamp: pos.timestamp,
+            });
+          }
+        );
+      } catch (err) {
+        if (!isStopped) onError?.(err);
+      }
+    })();
+
+    return () => {
+      isStopped = true;
+      if (nativeSubscription) nativeSubscription.remove();
+    };
+  }
+}

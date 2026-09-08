@@ -104,6 +104,7 @@ function initSocket(httpServer) {
           speed: parseFloat(speed) || 0,
           heading: parseFloat(heading) || 0,
           status: status || 'active',
+          address: address || null,
           updated_at: new Date().toISOString(),
         });
       } catch (err) {
