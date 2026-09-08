@@ -172,8 +172,8 @@ export default function LoginScreen({ onLoginSuccess }) {
 
                 <Text style={s.label}>EMAIL ADDRESS / USER ID</Text>
                 <View style={[s.inputRow, siEmailFocused && s.inputRowFocused]}>
-                  <Text style={s.inputIcon}>email</Text>
-                  <TextInput style={s.input} placeholder="driver@raktdoot.com" placeholderTextColor="#374151"
+                  <Text style={s.inputIcon}>✉️</Text>
+                  <TextInput style={s.input} placeholder="driver@raktdoot.com" placeholderTextColor="#94a3b8"
                     value={siEmail} onChangeText={setSiEmail} autoCapitalize="none"
                     keyboardType="email-address" autoCorrect={false}
                     onFocus={() => setSiEmailFocused(true)} onBlur={() => setSiEmailFocused(false)} />
@@ -181,8 +181,8 @@ export default function LoginScreen({ onLoginSuccess }) {
 
                 <Text style={s.label}>PASSWORD</Text>
                 <View style={[s.inputRow, siPassFocused && s.inputRowFocused]}>
-                  <Text style={s.inputIcon}>lock</Text>
-                  <TextInput style={[s.input, { flex: 1 }]} placeholder="password" placeholderTextColor="#374151"
+                  <Text style={s.inputIcon}>🔒</Text>
+                  <TextInput style={[s.input, { flex: 1 }]} placeholder="password" placeholderTextColor="#94a3b8"
                     value={siPassword} onChangeText={setSiPassword} secureTextEntry={!siShowPass}
                     autoCorrect={false} onFocus={() => setSiPassFocused(true)} onBlur={() => setSiPassFocused(false)} />
                   <TouchableOpacity onPress={() => setSiShowPass(v => !v)} style={s.eyeBtn} hitSlop={{ top:10,bottom:10,left:10,right:10 }}>
@@ -213,7 +213,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 <Text style={s.label}>FULL NAME *</Text>
                 <View style={[s.inputRow, rgNameFocused && s.inputRowFocused]}>
                   <Text style={s.inputIcon}>👤</Text>
-                  <TextInput style={s.input} placeholder="Ramesh Kumar" placeholderTextColor="#374151"
+                  <TextInput style={s.input} placeholder="Ramesh Kumar" placeholderTextColor="#94a3b8"
                     value={rgName} onChangeText={setRgName} autoCorrect={false}
                     onFocus={() => setRgNameFocused(true)} onBlur={() => setRgNameFocused(false)} />
                 </View>
@@ -221,7 +221,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 <Text style={s.label}>EMAIL ADDRESS *</Text>
                 <View style={[s.inputRow, rgEmailFocused && s.inputRowFocused]}>
                   <Text style={s.inputIcon}>📧</Text>
-                  <TextInput style={s.input} placeholder="driver@raktdoot.com" placeholderTextColor="#374151"
+                  <TextInput style={s.input} placeholder="driver@raktdoot.com" placeholderTextColor="#94a3b8"
                     value={rgEmail} onChangeText={setRgEmail} autoCapitalize="none"
                     keyboardType="email-address" autoCorrect={false}
                     onFocus={() => setRgEmailFocused(true)} onBlur={() => setRgEmailFocused(false)} />
@@ -230,7 +230,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 <Text style={s.label}>PHONE NUMBER</Text>
                 <View style={[s.inputRow, rgPhoneFocused && s.inputRowFocused]}>
                   <Text style={s.inputIcon}>📞</Text>
-                  <TextInput style={s.input} placeholder="+91 98765 43210" placeholderTextColor="#374151"
+                  <TextInput style={s.input} placeholder="+91 98765 43210" placeholderTextColor="#94a3b8"
                     value={rgPhone} onChangeText={setRgPhone} keyboardType="phone-pad" autoCorrect={false}
                     onFocus={() => setRgPhoneFocused(true)} onBlur={() => setRgPhoneFocused(false)} />
                 </View>
@@ -238,7 +238,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 <Text style={s.label}>PASSWORD *</Text>
                 <View style={[s.inputRow, rgPassFocused && s.inputRowFocused]}>
                   <Text style={s.inputIcon}>🔒</Text>
-                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Min. 6 characters" placeholderTextColor="#374151"
+                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Min. 6 characters" placeholderTextColor="#94a3b8"
                     value={rgPassword} onChangeText={setRgPassword} secureTextEntry={!rgShowPass}
                     autoCorrect={false} onFocus={() => setRgPassFocused(true)} onBlur={() => setRgPassFocused(false)} />
                   <TouchableOpacity onPress={() => setRgShowPass(v => !v)} style={s.eyeBtn} hitSlop={{ top:10,bottom:10,left:10,right:10 }}>
@@ -249,7 +249,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 <Text style={s.label}>CONFIRM PASSWORD *</Text>
                 <View style={[s.inputRow, rgConfFocused && s.inputRowFocused, rgConfirm && rgPassword !== rgConfirm && s.inputRowError]}>
                   <Text style={s.inputIcon}>🔐</Text>
-                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Re-enter password" placeholderTextColor="#374151"
+                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Re-enter password" placeholderTextColor="#94a3b8"
                     value={rgConfirm} onChangeText={setRgConfirm} secureTextEntry={!rgShowConfirm}
                     autoCorrect={false} onFocus={() => setRgConfFocused(true)} onBlur={() => setRgConfFocused(false)} />
                   <TouchableOpacity onPress={() => setRgShowConfirm(v => !v)} style={s.eyeBtn} hitSlop={{ top:10,bottom:10,left:10,right:10 }}>
@@ -325,52 +325,52 @@ const s = StyleSheet.create({
   logosRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
   omDropImg: { width: 72, height: 88, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.55, shadowRadius: 14, elevation: 10 },
   nabhBadgeImg: { width: 80, height: 80 },
-  centreName: { fontSize: 20, fontWeight: '800', color: '#f8fafc', textAlign: 'center', letterSpacing: 0.2 },
-  centreNameMr: { fontSize: 13, color: '#64748b', textAlign: 'center', fontWeight: '500' },
+  centreName: { fontSize: 20, fontWeight: '800', color: '#ffffff', textAlign: 'center', letterSpacing: 0.2 },
+  centreNameMr: { fontSize: 13, color: '#ffffff', textAlign: 'center', fontWeight: '500' },
   pill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(220,38,38,0.14)', borderWidth: 1, borderColor: 'rgba(220,38,38,0.35)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginTop: 4, gap: 5 },
   pillHeart: { fontSize: 11 },
-  pillText: { color: '#fca5a5', fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 },
+  pillText: { color: '#ffffff', fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 },
   card: { width: '100%', backgroundColor: '#0e0f18', borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(220,38,38,0.42)', overflow: 'hidden', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.28, shadowRadius: 24, elevation: 12 },
   tabBar: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.04)', margin: 14, borderRadius: 12, padding: 4, position: 'relative', height: 44 },
   tabIndicator: { position: 'absolute', top: 4, width: '48%', height: 36, backgroundColor: '#DC2626', borderRadius: 9, shadowColor: '#DC2626', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.45, shadowRadius: 8, elevation: 4 },
   tabBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
-  tabLabel: { fontSize: 13, fontWeight: '600', color: '#475569' },
+  tabLabel: { fontSize: 13, fontWeight: '700', color: '#ffffff' },
   tabLabelActive: { color: '#ffffff', fontWeight: '800' },
   formSection: { paddingHorizontal: 20, paddingBottom: 22 },
-  cardTitle: { fontSize: 20, fontWeight: '800', color: '#f1f5f9', textAlign: 'center', marginBottom: 4 },
-  cardSub: { fontSize: 11.5, color: '#475569', textAlign: 'center', marginBottom: 18, lineHeight: 17 },
-  label: { fontSize: 10, fontWeight: '700', color: '#475569', letterSpacing: 0.9, marginBottom: 7, textTransform: 'uppercase' },
-  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#090a11', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 11, paddingHorizontal: 12, marginBottom: 14, minHeight: 48 },
+  cardTitle: { fontSize: 20, fontWeight: '800', color: '#ffffff', textAlign: 'center', marginBottom: 4 },
+  cardSub: { fontSize: 12, color: '#ffffff', textAlign: 'center', marginBottom: 18, lineHeight: 17 },
+  label: { fontSize: 11, fontWeight: '700', color: '#ffffff', letterSpacing: 0.9, marginBottom: 7, textTransform: 'uppercase' },
+  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#090a11', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', borderRadius: 11, paddingHorizontal: 12, marginBottom: 14, minHeight: 48 },
   inputRowFocused: { borderColor: 'rgba(220,38,38,0.5)', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
   inputRowError: { borderColor: 'rgba(251,113,133,0.6)' },
-  inputIcon: { fontSize: 15, marginRight: 9 },
-  input: { flex: 1, color: '#f1f5f9', fontSize: 14, paddingVertical: 10 },
+  inputIcon: { fontSize: 15, marginRight: 9, color: '#ffffff' },
+  input: { flex: 1, color: '#ffffff', fontSize: 14, paddingVertical: 10 },
   eyeBtn: { paddingLeft: 8 },
   eyeIcon: { fontSize: 17 },
   errorHint: { fontSize: 11, color: '#f87171', marginTop: -10, marginBottom: 10, marginLeft: 4 },
   infoRow: { backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(99,102,241,0.18)' },
-  infoText: { fontSize: 11, color: '#64748b', textAlign: 'center' },
-  infoHighlight: { color: '#818cf8', fontWeight: '700' },
+  infoText: { fontSize: 11, color: '#ffffff', textAlign: 'center' },
+  infoHighlight: { color: '#a5b4fc', fontWeight: '700' },
   serverToggle: { paddingVertical: 6 },
-  serverToggleText: { fontSize: 11, color: '#374151' },
-  serverUrlValue: { color: '#6366f1' },
-  chevron: { color: '#374151', fontSize: 9 },
+  serverToggleText: { fontSize: 11, color: '#ffffff' },
+  serverUrlValue: { color: '#a5b4fc' },
+  chevron: { color: '#ffffff', fontSize: 9 },
   serverPanel: { backgroundColor: '#090a11', borderRadius: 11, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(99,102,241,0.18)' },
-  serverPanelLabel: { fontSize: 9.5, fontWeight: '700', color: '#4f46e5', letterSpacing: 0.8, marginBottom: 8 },
-  serverInput: { backgroundColor: '#0e0f18', borderRadius: 8, padding: 9, fontSize: 12, color: '#f8fafc', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', marginBottom: 8 },
-  presetBtn: { paddingVertical: 7, paddingHorizontal: 10, borderRadius: 7, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.03)' },
-  presetBtnActive: { backgroundColor: 'rgba(99,102,241,0.18)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.4)' },
-  presetLabel: { fontSize: 11, color: '#374151' },
-  presetLabelActive: { color: '#a5b4fc', fontWeight: '700' },
+  serverPanelLabel: { fontSize: 9.5, fontWeight: '700', color: '#818cf8', letterSpacing: 0.8, marginBottom: 8 },
+  serverInput: { backgroundColor: '#0e0f18', borderRadius: 8, padding: 9, fontSize: 12, color: '#ffffff', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginBottom: 8 },
+  presetBtn: { paddingVertical: 7, paddingHorizontal: 10, borderRadius: 7, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.08)' },
+  presetBtnActive: { backgroundColor: 'rgba(99,102,241,0.25)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.5)' },
+  presetLabel: { fontSize: 11, color: '#ffffff' },
+  presetLabelActive: { color: '#ffffff', fontWeight: '700' },
   btnWrap: { marginTop: 14 },
   submitBtn: { backgroundColor: '#DC2626', borderRadius: 13, paddingVertical: 15, alignItems: 'center', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.48, shadowRadius: 14, elevation: 8 },
   submitBtnGreen: { backgroundColor: '#059669', shadowColor: '#059669' },
-  submitText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
+  submitText: { color: '#ffffff', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
   switchLink: { marginTop: 14, alignItems: 'center' },
-  switchLinkText: { fontSize: 12, color: '#374151' },
-  switchLinkHighlight: { color: '#f87171', fontWeight: '700' },
+  switchLinkText: { fontSize: 13, color: '#ffffff' },
+  switchLinkHighlight: { color: '#fca5a5', fontWeight: '700' },
   footer: { alignItems: 'center', gap: 6 },
-  poweredBy: { fontSize: 10, color: '#1f2937', letterSpacing: 1.2, textTransform: 'uppercase' },
-  harbingerLogo: { width: 130, height: 40, opacity: 0.60 },
-  copyright: { fontSize: 10, color: '#1f2937', textAlign: 'center' },
+  poweredBy: { fontSize: 10, color: '#ffffff', letterSpacing: 1.2, textTransform: 'uppercase' },
+  harbingerLogo: { width: 130, height: 40, opacity: 0.90 },
+  copyright: { fontSize: 11, color: '#ffffff', textAlign: 'center' },
 });
