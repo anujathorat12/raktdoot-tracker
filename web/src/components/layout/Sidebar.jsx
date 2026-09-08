@@ -6,11 +6,6 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
-const managerNav = [
-  { to: '/manager/map', icon: Map, label: 'Fleet Map' },
-  { to: '/manager/issues', icon: AlertTriangle, label: 'Issues Feed' },
-];
-
 const adminNav = [
   { to: '/admin/users', icon: Users, label: 'User Management' },
   { to: '/admin/telemetry', icon: BarChart3, label: 'Telemetry' },
@@ -43,10 +38,15 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       {/* Logo */}
-      <div className="sidebar-logo">
+      <div
+        className="sidebar-logo"
+        onClick={() => navigate(isAdmin ? '/admin/users' : '/manager/map')}
+        style={{ cursor: 'pointer' }}
+        title="Go to Map"
+      >
         <div className="sidebar-logo-icon">🚚</div>
         <div>
-          <div className="sidebar-logo-text">DeliveryTrack</div>
+          <div className="sidebar-logo-text">RAKTDOOT TRACKER</div>
           <div className="sidebar-logo-sub">Fleet Management</div>
         </div>
       </div>
@@ -62,13 +62,10 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="sidebar-nav">
+        <div className="nav-section-label">Operations</div>
+        <NavItem to="/manager/map" icon={Map} label="Fleet Map" />
         {isManagerOrAdmin && (
-          <>
-            <div className="nav-section-label">Fleet Operations</div>
-            {managerNav.map(n => (
-              <NavItem key={n.to} {...n} badge={n.label === 'Issues Feed' ? openIssues : 0} />
-            ))}
-          </>
+          <NavItem to="/manager/issues" icon={AlertTriangle} label="Issues Feed" badge={openIssues} />
         )}
 
         {isAdmin && (

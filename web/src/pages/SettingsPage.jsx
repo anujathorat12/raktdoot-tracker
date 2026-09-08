@@ -1,13 +1,24 @@
-import { Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Settings, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   return (
     <div className="page-content-full">
       <div className="topbar">
+        <button
+          id="btn-back-to-map"
+          className="btn btn-secondary btn-sm"
+          onClick={() => navigate('/manager/map')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 'var(--space-2)' }}
+          title="Back to Fleet Map"
+        >
+          <ArrowLeft size={14} /> Back to Map
+        </button>
         <Settings size={16} style={{ color: 'var(--color-primary)' }} />
         <div><div className="topbar-title">Settings</div></div>
       </div>
@@ -32,9 +43,19 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="divider" style={{ margin: '4px 0' }} />
-            <button id="btn-settings-logout" className="btn btn-danger" style={{ width: 'fit-content' }} onClick={logout}>
-              Sign Out
-            </button>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 4 }}>
+              <button
+                id="btn-settings-back"
+                className="btn btn-primary btn-sm"
+                onClick={() => navigate('/manager/map')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <ArrowLeft size={14} /> Back to Fleet Map
+              </button>
+              <button id="btn-settings-logout" className="btn btn-danger btn-sm" onClick={logout}>
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </div>
