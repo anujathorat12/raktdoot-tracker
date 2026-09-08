@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Map as MapIcon, Users, Maximize2 } from 'lucide-react';
+import { Map as MapIcon } from 'lucide-react';
 import FleetMap from '../components/map/FleetMap';
 import DriverList from '../components/manager/DriverList';
 import DriverDetailsDrawer from '../components/manager/DriverDetailsDrawer';
-import DriverSimulatorModal from '../components/simulator/DriverSimulatorModal';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function ManagerMapPage() {
   const { user } = useAuth();
   const [selectedDriverId, setSelectedDriverId] = useState(null);
-  const [showSimulator, setShowSimulator] = useState(false);
   const { fleetDriversList } = useSocket();
 
   // If driver logs in, auto-target their own vehicle
@@ -19,9 +17,6 @@ export default function ManagerMapPage() {
       setSelectedDriverId(user.id);
     }
   }, [user]);
-
-  const activeCount = fleetDriversList.filter(d => d.status === 'active').length;
-  const issueCount = fleetDriversList.filter(d => d.status === 'issue').length;
 
   return (
     <div className="page-content-full">
@@ -32,20 +27,6 @@ export default function ManagerMapPage() {
           <div className="topbar-title">Fleet Map</div>
           <div className="topbar-subtitle">Real-time GPS tracking · {fleetDriversList.length} drivers</div>
         </div>
-        {/* Quick stats */}
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginLeft: 'auto', marginRight: 'var(--space-4)' }}>
-          <span className="badge badge-active"><span className="badge-dot pulse" />{activeCount} Active</span>
-          {issueCount > 0 && <span className="badge badge-issue"><span className="badge-dot" />{issueCount} Issue{issueCount > 1 ? 's' : ''}</span>}
-        </div>
-        {/* Simulator trigger */}
-        <button
-          id="btn-open-simulator"
-          className="btn btn-secondary btn-sm"
-          onClick={() => setShowSimulator(true)}
-          title="Open GPS Simulator"
-        >
-          🎮 Simulate
-        </button>
       </div>
 
       {/* Map + Driver list split */}
@@ -63,9 +44,6 @@ export default function ManagerMapPage() {
           onClose={() => setSelectedDriverId(null)}
         />
       )}
-
-      {/* Simulator modal */}
-      {showSimulator && <DriverSimulatorModal onClose={() => setShowSimulator(false)} />}
     </div>
   );
 }

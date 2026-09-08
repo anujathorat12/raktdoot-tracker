@@ -742,26 +742,6 @@ tbody td:first-child { color: var(--text-primary); font-weight: 500; }
 .metric-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-mono); }
 
-/* Simulator panel */
-.simulator-panel {
-  position: fixed;
-  bottom: var(--space-5);
-  right: var(--space-5);
-  z-index: 500;
-}
-.simulator-toggle {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  box-shadow: 0 4px 20px var(--color-primary-glow);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  border: none;
-  color: white;
-  font-size: 22px;
-  transition: transform var(--transition-base);
-}
-.simulator-toggle:hover { transform: scale(1.1) rotate(10deg); }
 
 /* ═══════════════════════════════════════════════════════════════
    ANIMATIONS
