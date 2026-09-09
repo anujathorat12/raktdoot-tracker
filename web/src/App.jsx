@@ -13,7 +13,8 @@ function DefaultRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'admin') return <Navigate to="/admin/users" replace />;
-  return <Navigate to="/manager/map" replace />;
+  if (user.role === 'manager') return <Navigate to="/manager/map" replace />;
+  return <Navigate to="/login" replace />;
 }
 
 function AppRoutes() {

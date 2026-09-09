@@ -7,7 +7,7 @@ import nabhBadgeIcon from '../assets/nabh_accredited_badge_real.png';
 import Footer from '../components/layout/Footer';
 import {
   Truck, Thermometer, Clock, Award,
-  Mail, Lock, Eye, EyeOff, Zap, Phone
+  Mail, Lock, Eye, EyeOff, Zap, Phone, Shield
 } from 'lucide-react';
 
 import { useLanguage } from '../context/LanguageContext';
@@ -29,8 +29,13 @@ export default function LoginPage() {
       setLocalErr(lang === 'en' ? 'Please enter email and password.' : 'कृपया ईमेल व पासवर्ड प्रविष्ट करा.');
       return;
     }
+    // Block driver logins on the web portal
+    if (email.trim().toLowerCase().startsWith('driver')) {
+      setLocalErr(t.driverRestrictedError);
+      return;
+    }
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (_) {}
   };
 
@@ -135,6 +140,12 @@ export default function LoginPage() {
           {/* Language Selector — sits right above the card */}
           <LanguageToggle className="signin-lang-selector" />
           <div className="brand-signin-card">
+            <div className="login-role-badge-wrap">
+              <span className="login-role-badge">
+                <Shield size={12} /> {t.portalRolesBadge}
+              </span>
+            </div>
+
             <h2 className="signin-title">{t.signInTitle}</h2>
             <p className="signin-subtitle">{t.signInSub}</p>
 
@@ -157,7 +168,7 @@ export default function LoginPage() {
                     className="input-field-custom"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="driver1@delivery.com"
+                    placeholder="manager@delivery.com or admin@delivery.com"
                     autoComplete="email"
                   />
                 </div>
@@ -205,6 +216,33 @@ export default function LoginPage() {
                   </span>
                 )}
               </button>
+
+              {/* Quick credentials for the only two supported web roles: Manager and Admin */}
+              <div className="login-quick-roles">
+                <span className="login-quick-roles-title">{t.quickDemo}</span>
+                <div className="login-quick-roles-buttons">
+                  <button
+                    type="button"
+                    className="quick-role-btn"
+                    onClick={() => {
+                      setEmail('manager@delivery.com');
+                      setPassword('manager123');
+                    }}
+                  >
+                    👔 Manager
+                  </button>
+                  <button
+                    type="button"
+                    className="quick-role-btn"
+                    onClick={() => {
+                      setEmail('admin@delivery.com');
+                      setPassword('admin123');
+                    }}
+                  >
+                    🛡️ Admin
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </section>

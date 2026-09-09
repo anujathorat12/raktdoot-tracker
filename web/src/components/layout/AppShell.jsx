@@ -5,7 +5,9 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function AppShell() {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="app-shell">

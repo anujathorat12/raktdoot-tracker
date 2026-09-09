@@ -17,13 +17,6 @@ export default function ManagerMapPage() {
   const [showDriverList, setShowDriverList] = useState(true);
   const { fleetDriversList } = useSocket();
 
-  // If driver logs in, auto-target their own vehicle
-  useEffect(() => {
-    if (user?.role === 'driver' && !selectedDriverId) {
-      setSelectedDriverId(user.id);
-    }
-  }, [user]);
-
   return (
     <div className="page-content-full">
       {/* Streamlined, elegant Topbar */}
