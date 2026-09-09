@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X, MapPin, Crosshair, User, AlertCircle, ChevronRight, Maximize2, ShieldAlert, Check } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const STATUS_COLORS = {
   active: '#10b981',
@@ -21,6 +22,7 @@ export default function MapPersonSearch({
   onSelectPerson,
   onResetView,
 }) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -142,7 +144,7 @@ export default function MapPersonSearch({
           id="input-map-person-search"
           type="text"
           className="map-person-search-input"
-          placeholder="Search person on map (name, phone, email)..."
+          placeholder={t.searchMapPlaceholder}
           value={query}
           onFocus={() => setIsOpen(true)}
           onChange={e => {
@@ -167,7 +169,7 @@ export default function MapPersonSearch({
               <X size={14} />
             </button>
           ) : (
-            <div className="search-badge" title="Total fleet personnel on system">
+            <div className="search-badge" title={t.totalVehiclesTooltip}>
               <User size={11} style={{ marginRight: 3 }} />
               {drivers.length}
             </div>

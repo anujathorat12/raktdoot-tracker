@@ -7,9 +7,10 @@ export const DEFAULT_SERVER_URL = (typeof window !== 'undefined' && window.locat
 
 export const PRESET_SERVER_URLS = [
   { label: 'Cloud Live (Render)', url: 'https://raktdoot-backend.onrender.com' },
+  { label: 'Local PC Wi-Fi (10.60.1.53)', url: 'http://10.60.1.53:5000' },
   { label: 'Localhost (5000)', url: 'http://localhost:5000' },
+  { label: 'Hotspot Gateway (192.168.137.1)', url: 'http://192.168.137.1:5000' },
   { label: 'Android Emulator (10.0.2.2)', url: 'http://10.0.2.2:5000' },
-  { label: 'Wi-Fi Network (10.60.1.53)', url: 'http://10.60.1.53:5000' },
 ];
 
 export const DEMO_CREDENTIALS = {

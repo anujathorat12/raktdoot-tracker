@@ -7,7 +7,7 @@ export default function IssuesHistoryModal({ visible, onClose, issues = [] }) {
       <View style={styles.backdrop}>
         <View style={styles.modalCard}>
           <View style={styles.header}>
-            <Text style={styles.title}>📋 My Incident Reports ({issues.length})</Text>
+            <Text style={styles.title}>Incident Reports ({issues.length})</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
@@ -15,7 +15,9 @@ export default function IssuesHistoryModal({ visible, onClose, issues = [] }) {
 
           {issues.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={{ fontSize: 32, marginBottom: 8 }}>✅</Text>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(16, 185, 129, 0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#10b981' }} />
+              </View>
               <Text style={{ color: '#f8fafc', fontWeight: '600', fontSize: 14 }}>No Incidents Reported</Text>
               <Text style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
                 Your shift has zero reported breakdowns or issues.

@@ -5,7 +5,7 @@ const { dbAll, dbGet, dbRun } = require('../../db/database');
 function getAllIssues({ status, limit = 50 } = {}) {
   let sql = `
     SELECT
-      i.id, i.description, i.image_path, i.lat, i.lng, i.status,
+      i.id, i.type, i.severity, i.description, i.image_path, i.lat, i.lng, i.address, i.status,
       i.created_at, i.resolved_at,
       u.id AS driver_id, u.name AS driver_name, u.phone AS driver_phone, u.avatar_color,
       r.name AS resolved_by_name
@@ -42,12 +42,22 @@ function getIssueById(issueId) {
   return issue;
 }
 
-function createIssue({ driver_id, description, image_path, lat, lng }) {
+function createIssue({ driver_id, type, severity, description, image_path, lat, lng, address }) {
   const id = uuidv4();
   dbRun(`
-    INSERT INTO issues (id, driver_id, description, image_path, lat, lng)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `, [id, driver_id, description, image_path || null, lat || null, lng || null]);
+    INSERT INTO issues (id, driver_id, type, severity, description, image_path, lat, lng, address)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    id,
+    driver_id,
+    type || 'vehicle_breakdown',
+    severity || 'medium',
+    description,
+    image_path || null,
+    lat || null,
+    lng || null,
+    address || null
+  ]);
 
   return getIssueById(id);
 }

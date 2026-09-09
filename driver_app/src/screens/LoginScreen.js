@@ -156,7 +156,6 @@ export default function LoginScreen({ onLoginSuccess }) {
             <Text style={s.centreName}>Jankalyan Blood Centre</Text>
             <Text style={s.centreNameMr}>जनकल्याण रक्तपेढी, पुणे</Text>
             <View style={s.pill}>
-              <Text style={s.pillHeart}>❤️</Text>
               <Text style={s.pillText}>RAKTDOOT TRACKER</Text>
             </View>
           </View>
@@ -185,7 +184,6 @@ export default function LoginScreen({ onLoginSuccess }) {
 
                 <Text style={s.label}>EMAIL ADDRESS / USER ID</Text>
                 <View style={[s.inputRow, siEmailFocused && s.inputRowFocused]}>
-                  <Text style={s.inputIcon}>✉️</Text>
                   <TextInput style={s.input} placeholder="driver@raktdoot.com" placeholderTextColor="#94a3b8"
                     value={siEmail} onChangeText={setSiEmail} autoCapitalize="none"
                     keyboardType="email-address" autoCorrect={false}
@@ -194,12 +192,11 @@ export default function LoginScreen({ onLoginSuccess }) {
 
                 <Text style={s.label}>PASSWORD</Text>
                 <View style={[s.inputRow, siPassFocused && s.inputRowFocused]}>
-                  <Text style={s.inputIcon}>🔒</Text>
                   <TextInput style={[s.input, { flex: 1 }]} placeholder="password" placeholderTextColor="#94a3b8"
                     value={siPassword} onChangeText={setSiPassword} secureTextEntry={!siShowPass}
                     autoCorrect={false} onFocus={() => setSiPassFocused(true)} onBlur={() => setSiPassFocused(false)} />
                   <TouchableOpacity onPress={() => setSiShowPass(v => !v)} style={s.eyeBtn} hitSlop={{ top:10,bottom:10,left:10,right:10 }}>
-                    <Text style={s.eyeIcon}>{siShowPass ? '🙈' : '👁️'}</Text>
+                    <Text style={{ color: '#818cf8', fontSize: 12, fontWeight: '600' }}>{siShowPass ? 'HIDE' : 'SHOW'}</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -208,7 +205,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 <Animated.View style={[{ transform: [{ scale: btnScale }] }, s.btnWrap]}>
                   <TouchableOpacity style={[s.submitBtn, loading && { opacity: 0.65 }]}
                     onPress={() => handleLogin()} onPressIn={pressIn} onPressOut={pressOut} disabled={loading} activeOpacity={0.9}>
-                    {loading ? <ActivityIndicator color="white" size="small" /> : <Text style={s.submitText}>⚡  Sign In</Text>}
+                    {loading ? <ActivityIndicator color="white" size="small" /> : <Text style={s.submitText}>Sign In</Text>}
                   </TouchableOpacity>
                 </Animated.View>
 
@@ -393,18 +390,18 @@ const s = StyleSheet.create({
   eyeBtn: { paddingLeft: 8 },
   eyeIcon: { fontSize: 17 },
   errorHint: { fontSize: 11, color: '#f87171', marginTop: -10, marginBottom: 10, marginLeft: 4 },
-  infoRow: { backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(99,102,241,0.18)' },
+  infoRow: { backgroundColor: 'rgba(185,28,28,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(220,38,38,0.2)' },
   infoText: { fontSize: 11, color: '#ffffff', textAlign: 'center' },
-  infoHighlight: { color: '#a5b4fc', fontWeight: '700' },
+  infoHighlight: { color: '#fca5a5', fontWeight: '700' },
   serverToggle: { paddingVertical: 6 },
   serverToggleText: { fontSize: 11, color: '#ffffff' },
-  serverUrlValue: { color: '#a5b4fc' },
+  serverUrlValue: { color: '#fca5a5' },
   chevron: { color: '#ffffff', fontSize: 9 },
-  serverPanel: { backgroundColor: '#090a11', borderRadius: 11, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(99,102,241,0.18)' },
-  serverPanelLabel: { fontSize: 9.5, fontWeight: '700', color: '#818cf8', letterSpacing: 0.8, marginBottom: 8 },
+  serverPanel: { backgroundColor: '#090a11', borderRadius: 11, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(220,38,38,0.25)' },
+  serverPanelLabel: { fontSize: 9.5, fontWeight: '700', color: '#f87171', letterSpacing: 0.8, marginBottom: 8 },
   serverInput: { backgroundColor: '#0e0f18', borderRadius: 8, padding: 9, fontSize: 12, color: '#ffffff', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginBottom: 8 },
   presetBtn: { paddingVertical: 7, paddingHorizontal: 10, borderRadius: 7, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.08)' },
-  presetBtnActive: { backgroundColor: 'rgba(99,102,241,0.25)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.5)' },
+  presetBtnActive: { backgroundColor: 'rgba(185,28,28,0.25)', borderWidth: 1, borderColor: 'rgba(220,38,38,0.5)' },
   presetLabel: { fontSize: 11, color: '#ffffff' },
   presetLabelActive: { color: '#ffffff', fontWeight: '700' },
   btnWrap: { marginTop: 14 },

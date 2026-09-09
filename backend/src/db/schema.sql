@@ -44,10 +44,13 @@ CREATE TABLE IF NOT EXISTS location_history (
 CREATE TABLE IF NOT EXISTS issues (
   id          TEXT PRIMARY KEY,
   driver_id   TEXT NOT NULL,
+  type        TEXT DEFAULT 'vehicle_breakdown',
+  severity    TEXT DEFAULT 'medium',
   description TEXT NOT NULL,
   image_path  TEXT,
   lat         REAL,
   lng         REAL,
+  address     TEXT,
   status      TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'resolved')),
   resolved_by TEXT,
   resolved_at TEXT,

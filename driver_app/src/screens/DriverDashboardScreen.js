@@ -1,15 +1,84 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Alert, Switch, Platform, ActivityIndicator
+  ScrollView, Alert, Platform, ActivityIndicator, Image
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STATUS_COLORS } from '../config/constants';
 import { socketManager } from '../services/socket';
 import { createIssue, getDriverIssues } from '../services/api';
-import { LocationSimulator } from '../services/locationSimulator';
 import { getExactCurrentLocation, startLocationWatcher, requestLocationPermissions } from '../services/realLocation';
 import ReportIssueModal from '../components/ReportIssueModal';
 import IssuesHistoryModal from '../components/IssuesHistoryModal';
+
+const omDropImg = require('../../assets/om_blood_drop_logo.jpg');
+const nabhBadgeImg = require('../../assets/nabh_badge_logo.jpg');
+const harbingerLogo = require('../../assets/harbinger_logo.png');
+
+const translations = {
+  en: {
+    tag: 'RAKTDOOT TRACKER',
+    centreTitle: 'Jankalyan Blood Centre',
+    location: 'Pune, Maharashtra',
+    connected: 'Connected (Live)',
+    reconnecting: 'Reconnecting...',
+    exit: 'Sign Out',
+    shiftStatus: 'Shift Status',
+    online: 'Online',
+    break: 'Break',
+    offDuty: 'Off Duty',
+    telemetryTitle: 'Live Vehicle Telemetry',
+    gpsLocked: 'GPS Locked',
+    acquiringGps: 'Acquiring GPS...',
+    gpsDenied: 'Permission Denied',
+    speed: 'SPEED',
+    heading: 'HEADING',
+    bearing: 'BEARING',
+    coordsAddress: 'PHYSICAL COORDINATES & LOCATION',
+    liveGps: 'LIVE GPS',
+    resolvingLocation: 'Resolving physical address...',
+    refreshGps: 'Acquire / Refresh Exact GPS',
+    lockingGps: 'Locking Real Physical GPS...',
+    packetsSent: 'Telemetry Packets Sent',
+    synced: 'Synced',
+    reportIncident: 'Report Breakdown / Delay',
+    incidentLogs: 'Incident Logs',
+    alertDispatchedTitle: 'Alert Dispatched',
+    alertDispatchedBody: 'Your incident has been transmitted live to the manager console.',
+    footer: '© 2026 Jankalyan Blood Centre, Pune | Powered by Harbinger Systems Pvt. Ltd.',
+  },
+  mr: {
+    tag: 'रक्तदूत ट्रॅकर',
+    centreTitle: 'जनकल्याण रक्तपेढी',
+    location: 'पुणे, महाराष्ट्र',
+    connected: 'लाईव्ह कनेक्टेड',
+    reconnecting: 'पुन्हा जोडत आहे...',
+    exit: 'बाहेर पडा',
+    shiftStatus: 'शिफ्ट स्थिती (Shift Status)',
+    online: 'सक्रिय (Online)',
+    break: 'विश्रांती (Break)',
+    offDuty: 'ऑफ ड्युटी (Off Duty)',
+    telemetryTitle: 'लाईव्ह वाहन टेलीमेट्री',
+    gpsLocked: 'GPS अचूक लॉक',
+    acquiringGps: 'GPS शोधत आहे...',
+    gpsDenied: 'परवानगी नाकारली',
+    speed: 'वेग (SPEED)',
+    heading: 'दिशा (HEADING)',
+    bearing: 'अंश दिशा',
+    coordsAddress: 'अचूक अक्षांश, रेखांश व ठिकाण',
+    liveGps: 'लाईव्ह GPS',
+    resolvingLocation: 'ठिकाणाचा पत्ता शोधत आहे...',
+    refreshGps: 'अचूक GPS स्थान अद्ययावत करा',
+    lockingGps: 'GPS सिग्नल लॉक करत आहे...',
+    packetsSent: 'पाठवलेले टेलीमेट्री पॅकेट्स',
+    synced: 'अद्ययावत वेळ',
+    reportIncident: 'आणीबाणी / बिघाड नोंदवा',
+    incidentLogs: 'तक्रार नोंदी',
+    alertDispatchedTitle: 'अलर्ट पाठवला',
+    alertDispatchedBody: 'तुमची तक्रार थेट व्यवस्थापक डॅशबोर्डवर पाठवली गेली आहे.',
+    footer: '© २०२६ जनकल्याण रक्तपेढी, पुणे | हार्बिंजर सिस्टीम्स प्रा. लि.',
+  },
+};
 
 export default function DriverDashboardScreen({
   user,
@@ -17,16 +86,16 @@ export default function DriverDashboardScreen({
   serverUrl,
   onLogout,
 }) {
+  const [lang, setLang] = useState('en');
   const [driverStatus, setDriverStatus] = useState('active'); // active, idle, offline
   const [socketConnected, setSocketConnected] = useState(false);
-  const [useSimulator, setUseSimulator] = useState(false); // Default to REAL DEVICE GPS
   const [gpsStatus, setGpsStatus] = useState('acquiring'); // acquiring, locked, denied, error
   const [gpsAccuracy, setGpsAccuracy] = useState(null);
   const [gpsErrorMsg, setGpsErrorMsg] = useState('');
   const [isRefreshingGps, setIsRefreshingGps] = useState(false);
   const [currentTelemetry, setCurrentTelemetry] = useState({
-    lat: 19.0760,
-    lng: 72.8777,
+    lat: 18.5204,
+    lng: 73.8567,
     speed: 0,
     heading: 0,
     address: 'Acquiring Real Device GPS...',
@@ -39,17 +108,27 @@ export default function DriverDashboardScreen({
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [issuesHistory, setIssuesHistory] = useState([]);
 
-  // Simulator & GPS tracking references
-  const simulatorRef = useRef(new LocationSimulator());
+  // Live GPS tracking reference
   const watcherCleanupRef = useRef(null);
-  const intervalRef = useRef(null);
+
+  // Load language preference
+  useEffect(() => {
+    AsyncStorage.getItem('@driver_lang').then(saved => {
+      if (saved === 'mr' || saved === 'en') {
+        setLang(saved);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const changeLang = (newLang) => {
+    setLang(newLang);
+    AsyncStorage.setItem('@driver_lang', newLang).catch(() => {});
+  };
+
+  const t = translations[lang] || translations.en;
 
   // ── Helper: Stop tracking ──
   const stopTracking = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
     if (watcherCleanupRef.current) {
       watcherCleanupRef.current();
       watcherCleanupRef.current = null;
@@ -74,175 +153,123 @@ export default function DriverDashboardScreen({
     socketManager.emitLocationUpdate(payload);
   }, [driverStatus]);
 
-  // ── Helper: Start location tracking (Simulator or Real GPS) ──
+  // ── Helper: Start real hardware / browser GPS tracking ──
   const startTracking = useCallback(() => {
     stopTracking();
 
     if (driverStatus === 'offline') return;
 
-    if (useSimulator) {
-      setGpsStatus('simulated');
-      // Send first telemetry point immediately!
-      const initialPoint = simulatorRef.current.getNextPoint();
-      transmitLocation(initialPoint, driverStatus);
-
-      // Periodic simulated driving updates every 3 seconds
-      intervalRef.current = setInterval(() => {
-        const nextPoint = simulatorRef.current.getNextPoint();
-        transmitLocation(nextPoint, driverStatus);
-      }, 3000);
-    } else {
-      // Real Hardware / Browser GPS via realLocation service
-      setGpsStatus('acquiring');
-      setGpsErrorMsg('');
-
-      const cleanup = startLocationWatcher(
-        (location) => {
-          setGpsStatus('locked');
-          setGpsAccuracy(location.accuracy);
-          setGpsErrorMsg('');
-          transmitLocation(location, driverStatus);
-        },
-        (err) => {
-          console.warn('[GPS Watcher Error]:', err.message);
-          if (err.message.includes('denied') || err.message.includes('permission')) {
-            setGpsStatus('denied');
-            setGpsErrorMsg('Location access was denied. Please allow GPS permission in your browser/device.');
-          } else {
-            setGpsStatus('error');
-            setGpsErrorMsg(err.message || 'GPS signal unavailable');
-          }
-        }
-      );
-
-      watcherCleanupRef.current = cleanup;
-    }
-  }, [driverStatus, useSimulator, transmitLocation, stopTracking]);
-
-  // ── Helper: Manual GPS Refresh / Acquire ──
-  const handleRefreshExactGps = async () => {
-    if (useSimulator) {
-      const nextPoint = simulatorRef.current.getNextPoint();
-      transmitLocation(nextPoint, driverStatus);
-      return;
-    }
-
-    setIsRefreshingGps(true);
+    // Real Hardware / Browser GPS via realLocation service
+    setGpsStatus('acquiring');
     setGpsErrorMsg('');
-    try {
-      const loc = await getExactCurrentLocation();
-      setGpsStatus('locked');
-      setGpsAccuracy(loc.accuracy);
-      transmitLocation(loc, driverStatus);
-      if (Platform.OS === 'web') {
-        // Light notification on web
-        console.log('[GPS Locked]', loc.address);
-      } else {
-        Alert.alert('GPS Locked', `Accurate location acquired: ${loc.address} (±${loc.accuracy}m)`);
+
+    const cleanup = startLocationWatcher(
+      (location) => {
+        setGpsStatus('locked');
+        setGpsAccuracy(location.accuracy);
+        setGpsErrorMsg('');
+        transmitLocation(location, driverStatus);
+      },
+      (err) => {
+        console.warn('[GPS Watcher Error]:', err.message);
+        if (err.message.includes('denied') || err.message.includes('permission')) {
+          setGpsStatus('denied');
+          setGpsErrorMsg('Location access was denied. Please allow GPS permission in your device/browser settings.');
+        } else {
+          setGpsStatus('error');
+          setGpsErrorMsg(err.message || 'GPS signal unavailable');
+        }
       }
+    );
+
+    watcherCleanupRef.current = cleanup;
+  }, [driverStatus, transmitLocation, stopTracking]);
+
+  // Handle immediate one-shot GPS refresh
+  const handleRefreshExactGps = async () => {
+    try {
+      setIsRefreshingGps(true);
+      const exactLoc = await getExactCurrentLocation();
+      setGpsStatus('locked');
+      setGpsAccuracy(exactLoc.accuracy);
+      setGpsErrorMsg('');
+      transmitLocation(exactLoc, driverStatus);
     } catch (err) {
-      setGpsStatus('error');
-      setGpsErrorMsg(err.message);
-      Alert.alert(
-        'GPS Acquisition Notice',
-        `${err.message}\n\nYou can grant permission or toggle Route Simulator mode below for testing.`,
-        [
-          { text: 'Switch to Simulator', onPress: () => setUseSimulator(true) },
-          { text: 'Retry', onPress: () => handleRefreshExactGps() }
-        ]
-      );
+      console.warn('[GPS Exact Refresh]:', err.message);
+      if (err.message.includes('denied') || err.message.includes('permission')) {
+        setGpsStatus('denied');
+        setGpsErrorMsg('GPS access was denied by your device. Please allow location permissions in settings.');
+      }
     } finally {
       setIsRefreshingGps(false);
     }
   };
 
-  // ── Helper: Load issues from REST API ──
-  const loadIssues = useCallback(async () => {
-    try {
-      const data = await getDriverIssues(serverUrl, token);
-      setIssuesHistory(data);
-    } catch (_) {}
-  }, [serverUrl, token]);
-
-  // ── Effect 1: Connect WebSocket on mount ──
+  // ── Setup Socket & Start Real Tracking ──
   useEffect(() => {
-    socketManager.connect(serverUrl, token, (connected) => {
-      setSocketConnected(connected);
-      if (connected) {
-        socketManager.emitStatusChange(driverStatus);
-        // Transmit immediate GPS location on connect
-        if (driverStatus !== 'offline') {
-          if (useSimulator) {
-            const pt = simulatorRef.current.getNextPoint();
-            transmitLocation(pt, driverStatus);
-          } else {
-            getExactCurrentLocation()
-              .then(loc => {
-                setGpsStatus('locked');
-                setGpsAccuracy(loc.accuracy);
-                transmitLocation(loc, driverStatus);
-              })
-              .catch(err => {
-                console.warn('[GPS Connect Error]', err.message);
-              });
-          }
-        }
+    if (!token || !serverUrl) return;
+
+    socketManager.connect(serverUrl, token, (isConnected) => {
+      setSocketConnected(isConnected);
+    });
+
+    // Initial GPS permission check and acquire
+    requestLocationPermissions().then(hasPerms => {
+      if (hasPerms) {
+        handleRefreshExactGps();
       }
     });
 
-    loadIssues();
+    // Start hardware GPS watcher
+    startTracking();
+
+    // Fetch driver's past issues
+    getDriverIssues(serverUrl, token)
+      .then(setIssuesHistory)
+      .catch(console.error);
 
     return () => {
       stopTracking();
       socketManager.disconnect();
     };
-  }, [serverUrl, token, driverStatus, useSimulator, transmitLocation, stopTracking, loadIssues]);
+  }, [token, serverUrl]);
 
-  // ── Effect 2: Restart tracking when status or simulator mode changes ──
+  // Restart tracking on driverStatus changes
   useEffect(() => {
-    if (driverStatus !== 'offline') {
-      startTracking();
-    } else {
-      stopTracking();
-    }
-    return () => stopTracking();
-  }, [driverStatus, useSimulator, startTracking, stopTracking]);
+    startTracking();
+  }, [driverStatus, startTracking]);
 
-  // Handle Shift Status Changes
+  // ── Change Status ──
   const handleStatusChange = (newStatus) => {
     setDriverStatus(newStatus);
     socketManager.emitStatusChange(newStatus);
 
     if (newStatus === 'offline') {
       stopTracking();
-      // Send final offline ping
-      transmitLocation({ ...currentTelemetry, speed: 0 }, 'offline');
-    } else if (newStatus === 'idle') {
-      transmitLocation({ ...currentTelemetry, speed: 0 }, 'idle');
     }
   };
 
-  // Handle Issue Submission
+  // ── Submit Incident ──
   const handleReportIssue = async (issueData) => {
-    // 1. Submit via REST API
-    const created = await createIssue(serverUrl, token, issueData);
-
-    // 2. Emit real-time WebSocket alert
-    socketManager.emitIssueReported({
-      ...created,
-      driver_name: user?.name,
+    const created = await createIssue(serverUrl, token, {
+      ...issueData,
+      status: 'open',
     });
 
-    // 3. Update status to issue
+    socketManager.emitIssueAlert({
+      ...created,
+      driver_name: user?.name,
+      driver_id: user?.id,
+    });
+
     setDriverStatus('issue');
     socketManager.emitStatusChange('issue');
 
-    // Refresh history
     setIssuesHistory(prev => [created, ...prev]);
 
     Alert.alert(
-      'Alert Dispatched',
-      'Your incident has been transmitted live to the manager console.'
+      t.alertDispatchedTitle,
+      t.alertDispatchedBody
     );
   };
 
@@ -252,10 +279,53 @@ export default function DriverDashboardScreen({
 
   return (
     <View style={styles.container}>
-      {/* Top App Bar */}
-      <View style={styles.topbar}>
+      {/* 1. Institutional Top Bar — Emblems, Title, Lang Toggle, Harbinger Logo, Sign Out */}
+      <View style={styles.institutionalHeader}>
+        <View style={styles.brandRow}>
+          <Image source={omDropImg} style={styles.omDropLogo} resizeMode="contain" />
+          <Image source={nabhBadgeImg} style={styles.nabhBadgeLogo} resizeMode="cover" />
+          <View style={styles.brandTextGroup}>
+            <Text style={styles.brandTitle}>{t.tag}</Text>
+            <Text style={styles.brandSubtitle}>{t.centreTitle}</Text>
+            <Text style={styles.brandLocation}>{t.location}</Text>
+          </View>
+        </View>
+
+        <View style={styles.topRightControls}>
+          {/* Language Selector Capsule [ मराठी | English ] */}
+          <View style={styles.langToggleWrap}>
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'mr' && styles.langBtnActive]}
+              onPress={() => changeLang('mr')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.langBtnText, lang === 'mr' && styles.langBtnTextActive]}>मराठी</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'en' && styles.langBtnActive]}
+              onPress={() => changeLang('en')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.langBtnText, lang === 'en' && styles.langBtnTextActive]}>English</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.vDivider} />
+
+          <Image source={harbingerLogo} style={styles.harbingerLogoImg} resizeMode="contain" />
+
+          <View style={styles.vDivider} />
+
+          <TouchableOpacity onPress={onLogout} style={styles.logoutBtn} activeOpacity={0.8}>
+            <Text style={styles.logoutText}>{t.exit}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* 2. Driver Profile & Live Connection Status Bar */}
+      <View style={styles.driverSubBar}>
         <View style={styles.driverProfile}>
-          <View style={[styles.avatar, { backgroundColor: user?.avatar_color || '#6366f1' }]}>
+          <View style={[styles.avatar, { backgroundColor: user?.avatar_color || '#dc2626' }]}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View>
@@ -263,110 +333,110 @@ export default function DriverDashboardScreen({
             <View style={styles.socketIndicator}>
               <View style={[styles.dot, { backgroundColor: socketConnected ? '#10b981' : '#ef4444' }]} />
               <Text style={styles.socketText}>
-                {socketConnected ? 'Connected (Live)' : 'Reconnecting...'}
+                {socketConnected ? t.connected : t.reconnecting}
               </Text>
             </View>
           </View>
         </View>
 
-        <TouchableOpacity onPress={onLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Exit</Text>
-        </TouchableOpacity>
+        <View style={[styles.statusPill, { backgroundColor: `${STATUS_COLORS[driverStatus]}22`, borderColor: STATUS_COLORS[driverStatus] }]}>
+          <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[driverStatus] }]} />
+          <Text style={[styles.statusPillText, { color: STATUS_COLORS[driverStatus] }]}>
+            {driverStatus.toUpperCase()}
+          </Text>
+        </View>
       </View>
 
+      {/* Main Content Area */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Shift Control Card */}
+        {/* Shift Control Card (100% Emoji-Free) */}
         <View style={styles.shiftCard}>
           <View style={styles.shiftHeader}>
-            <Text style={styles.shiftCardTitle}>Shift Status</Text>
-            <View style={[styles.statusPill, { backgroundColor: `${STATUS_COLORS[driverStatus]}22`, borderColor: STATUS_COLORS[driverStatus] }]}>
+            <Text style={styles.shiftCardTitle}>{t.shiftStatus}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[driverStatus] }]} />
-              <Text style={[styles.statusPillText, { color: STATUS_COLORS[driverStatus] }]}>
-                {driverStatus.toUpperCase()}
+              <Text style={{ color: STATUS_COLORS[driverStatus], fontSize: 11, fontWeight: '700', textTransform: 'capitalize' }}>
+                {driverStatus}
               </Text>
             </View>
           </View>
 
-          {/* Shift Buttons */}
+          {/* Professional Status Buttons */}
           <View style={styles.shiftButtonsRow}>
+            {/* Online */}
             <TouchableOpacity
               style={[styles.shiftBtn, driverStatus === 'active' && styles.shiftBtnActive]}
               onPress={() => handleStatusChange('active')}
+              activeOpacity={0.8}
             >
-              <Text style={styles.shiftBtnEmoji}>🚚</Text>
+              <View style={[styles.indicatorCircle, { backgroundColor: driverStatus === 'active' ? '#10b981' : '#1e293b', borderColor: '#10b981' }]} />
               <Text style={[styles.shiftBtnLabel, driverStatus === 'active' && styles.shiftBtnLabelActive]}>
-                Online
+                {t.online}
               </Text>
             </TouchableOpacity>
 
+            {/* Break */}
             <TouchableOpacity
               style={[styles.shiftBtn, driverStatus === 'idle' && styles.shiftBtnIdle]}
               onPress={() => handleStatusChange('idle')}
+              activeOpacity={0.8}
             >
-              <Text style={styles.shiftBtnEmoji}>⏸️</Text>
+              <View style={[styles.indicatorCircle, { backgroundColor: driverStatus === 'idle' ? '#f59e0b' : '#1e293b', borderColor: '#f59e0b' }]} />
               <Text style={[styles.shiftBtnLabel, driverStatus === 'idle' && { color: '#f59e0b', fontWeight: '700' }]}>
-                Break
+                {t.break}
               </Text>
             </TouchableOpacity>
 
+            {/* Off Duty */}
             <TouchableOpacity
               style={[styles.shiftBtn, driverStatus === 'offline' && styles.shiftBtnOffline]}
               onPress={() => handleStatusChange('offline')}
+              activeOpacity={0.8}
             >
-              <Text style={styles.shiftBtnEmoji}>🛑</Text>
+              <View style={[styles.indicatorCircle, { backgroundColor: driverStatus === 'offline' ? '#94a3b8' : '#1e293b', borderColor: '#94a3b8' }]} />
               <Text style={[styles.shiftBtnLabel, driverStatus === 'offline' && { color: '#94a3b8', fontWeight: '700' }]}>
-                Off Duty
+                {t.offDuty}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Live Telemetry HUD */}
+        {/* Live Telemetry HUD (100% Emoji-Free) */}
         <View style={styles.hudCard}>
           <View style={styles.hudHeader}>
-            <Text style={styles.hudTitle}>Live Vehicle Telemetry</Text>
-            {useSimulator ? (
-              <View style={[styles.gpsBadge, { backgroundColor: '#f59e0b22', borderColor: '#f59e0b' }]}>
-                <Text style={[styles.gpsBadgeText, { color: '#f59e0b' }]}>🎮 Demo Simulator</Text>
-              </View>
-            ) : gpsStatus === 'locked' ? (
+            <Text style={styles.hudTitle}>{t.telemetryTitle}</Text>
+            {gpsStatus === 'locked' ? (
               <View style={[styles.gpsBadge, { backgroundColor: '#10b98122', borderColor: '#10b981' }]}>
                 <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
                 <Text style={[styles.gpsBadgeText, { color: '#10b981' }]}>
-                  GPS Locked {gpsAccuracy ? `(±${gpsAccuracy}m)` : ''}
+                  {t.gpsLocked} {gpsAccuracy ? `(±${gpsAccuracy}m)` : ''}
                 </Text>
               </View>
             ) : gpsStatus === 'denied' ? (
               <View style={[styles.gpsBadge, { backgroundColor: '#ef444422', borderColor: '#ef4444' }]}>
-                <Text style={[styles.gpsBadgeText, { color: '#ef4444' }]}>⚠️ Permission Denied</Text>
+                <Text style={[styles.gpsBadgeText, { color: '#ef4444' }]}>{t.gpsDenied}</Text>
               </View>
             ) : (
-              <View style={[styles.gpsBadge, { backgroundColor: '#6366f122', borderColor: '#6366f1' }]}>
-                <ActivityIndicator size="small" color="#818cf8" style={{ transform: [{ scale: 0.7 }] }} />
-                <Text style={[styles.gpsBadgeText, { color: '#818cf8' }]}>Acquiring GPS...</Text>
+              <View style={[styles.gpsBadge, { backgroundColor: 'rgba(185, 28, 28, 0.15)', borderColor: '#b91c1c' }]}>
+                <ActivityIndicator size="small" color="#f87171" style={{ transform: [{ scale: 0.7 }] }} />
+                <Text style={[styles.gpsBadgeText, { color: '#f87171' }]}>{t.acquiringGps}</Text>
               </View>
             )}
           </View>
 
           {/* Location Permission Denied Alert Card */}
-          {gpsStatus === 'denied' && !useSimulator && (
+          {gpsStatus === 'denied' && (
             <View style={styles.gpsDeniedBox}>
-              <Text style={styles.gpsDeniedTitle}>📍 Location Access Required</Text>
+              <Text style={styles.gpsDeniedTitle}>Location Access Required</Text>
               <Text style={styles.gpsDeniedText}>
-                {gpsErrorMsg || 'Browser or device GPS permission is blocked. Please allow location access in your browser address bar (lock icon) to transmit your real position.'}
+                {gpsErrorMsg || 'Device GPS permission is required to stream real-time blood delivery coordinates to dispatch. Please enable location services in your device settings.'}
               </Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                 <TouchableOpacity
-                  style={[styles.smallActionBtn, { backgroundColor: '#4f46e5' }]}
+                  style={[styles.smallActionBtn, { backgroundColor: '#b91c1c' }]}
                   onPress={handleRefreshExactGps}
                 >
-                  <Text style={styles.smallActionBtnText}>Retry Permission</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.smallActionBtn, { backgroundColor: '#334155' }]}
-                  onPress={() => setUseSimulator(true)}
-                >
-                  <Text style={styles.smallActionBtnText}>Use Simulator Instead</Text>
+                  <Text style={styles.smallActionBtnText}>Grant & Retry GPS</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -375,7 +445,7 @@ export default function DriverDashboardScreen({
           <View style={styles.hudGrid}>
             {/* Speedometer */}
             <View style={styles.hudTile}>
-              <Text style={styles.tileLabel}>SPEED</Text>
+              <Text style={styles.tileLabel}>{t.speed}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
                 <Text style={styles.speedValue}>{Math.round(currentTelemetry.speed)}</Text>
                 <Text style={styles.unitText}>km/h</Text>
@@ -384,92 +454,83 @@ export default function DriverDashboardScreen({
 
             {/* Compass / Heading */}
             <View style={styles.hudTile}>
-              <Text style={styles.tileLabel}>HEADING</Text>
+              <Text style={styles.tileLabel}>{t.heading}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
                 <Text style={styles.headingValue}>{currentTelemetry.heading}°</Text>
-                <Text style={styles.unitText}>BEARING</Text>
+                <Text style={styles.unitText}>{t.bearing}</Text>
               </View>
             </View>
           </View>
 
           {/* Coordinates & Physical Address */}
           <View style={styles.routeBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 13 }}>📍</Text>
-                <Text style={styles.coordsText}>
-                  {currentTelemetry.lat ? currentTelemetry.lat.toFixed(5) : '0.00000'}, {currentTelemetry.lng ? currentTelemetry.lng.toFixed(5) : '0.00000'}
-                </Text>
-              </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <Text style={styles.routeBoxHeaderLabel}>{t.coordsAddress}</Text>
               <View style={styles.liveTag}>
-                <Text style={styles.liveTagText}>EXACT GPS</Text>
+                <Text style={styles.liveTagText}>{t.liveGps}</Text>
               </View>
             </View>
+            <Text style={styles.coordsText}>
+              {currentTelemetry.lat ? currentTelemetry.lat.toFixed(5) : '0.00000'}, {currentTelemetry.lng ? currentTelemetry.lng.toFixed(5) : '0.00000'}
+            </Text>
             <Text style={styles.addressText} numberOfLines={2}>
-              {currentTelemetry.address || 'Resolving physical location...'}
+              {currentTelemetry.address || t.resolvingLocation}
             </Text>
           </View>
 
-          {/* Quick Tactile GPS Refresh Button */}
+          {/* Tactile GPS Refresh Button (No Emoji) */}
           <TouchableOpacity
             style={[styles.refreshGpsBtn, isRefreshingGps && { opacity: 0.7 }]}
             onPress={handleRefreshExactGps}
             disabled={isRefreshingGps}
+            activeOpacity={0.8}
           >
-            {isRefreshingGps ? (
+            {isRefreshingGps && (
               <ActivityIndicator size="small" color="#ffffff" style={{ marginRight: 8 }} />
-            ) : (
-              <Text style={{ fontSize: 15, marginRight: 6 }}>🎯</Text>
             )}
             <Text style={styles.refreshGpsBtnText}>
-              {isRefreshingGps ? 'Locking Real Physical GPS...' : 'Acquire / Refresh Exact GPS'}
+              {isRefreshingGps ? t.lockingGps : t.refreshGps}
             </Text>
           </TouchableOpacity>
 
           {/* Pings & Sync */}
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Telemetry Packets Sent: <Text style={{ color: '#818cf8', fontWeight: '700' }}>{pingsCount}</Text></Text>
-            <Text style={styles.metaLabel}>Synced: {lastSyncTime.toLocaleTimeString()}</Text>
-          </View>
-        </View>
-
-        {/* GPS Tracking Mode Toggle */}
-        <View style={styles.simulatorCard}>
-          <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={styles.simulatorTitle}>Route Simulation Mode (Demo Only)</Text>
-            <Text style={styles.simulatorSub}>
-              {useSimulator
-                ? 'Simulating realistic Mumbai logistics driving (Bandra ➔ Andheri ➔ BKC)'
-                : 'Using real hardware / browser GPS sensor at your actual location'}
+            <Text style={styles.metaLabel}>
+              {t.packetsSent}: <Text style={{ color: '#818cf8', fontWeight: '700' }}>{pingsCount}</Text>
+            </Text>
+            <Text style={styles.metaLabel}>
+              {t.synced}: {lastSyncTime.toLocaleTimeString()}
             </Text>
           </View>
-          <Switch
-            value={useSimulator}
-            onValueChange={setUseSimulator}
-            trackColor={{ false: '#334155', true: '#4f46e5' }}
-            thumbColor={useSimulator ? '#818cf8' : '#94a3b8'}
-          />
         </View>
 
-        {/* Action Buttons */}
+        {/* Action Buttons (100% Emoji-Free) */}
         <View style={styles.actionsContainer}>
           {/* Emergency / Breakdown Alert Button */}
           <TouchableOpacity
             style={styles.emergencyBtn}
             onPress={() => setShowReportModal(true)}
+            activeOpacity={0.85}
           >
-            <Text style={{ fontSize: 20, marginRight: 8 }}>🚨</Text>
-            <Text style={styles.emergencyBtnText}>Report Breakdown / Delay</Text>
+            <View style={styles.emergencyIconDot} />
+            <Text style={styles.emergencyBtnText}>{t.reportIncident}</Text>
           </TouchableOpacity>
 
           {/* Incident Log Button */}
           <TouchableOpacity
             style={styles.historyBtn}
             onPress={() => setShowHistoryModal(true)}
+            activeOpacity={0.85}
           >
-            <Text style={{ fontSize: 16, marginRight: 8 }}>📋</Text>
-            <Text style={styles.historyBtnText}>My Incident Logs ({issuesHistory.length})</Text>
+            <Text style={styles.historyBtnText}>
+              {t.incidentLogs} ({issuesHistory.length})
+            </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Global Footer */}
+        <View style={styles.footerWrap}>
+          <Text style={styles.footerText}>{t.footer}</Text>
         </View>
       </ScrollView>
 
@@ -479,12 +540,14 @@ export default function DriverDashboardScreen({
         onClose={() => setShowReportModal(false)}
         onSubmit={handleReportIssue}
         currentLocation={currentTelemetry}
+        lang={lang}
       />
 
       <IssuesHistoryModal
         visible={showHistoryModal}
         onClose={() => setShowHistoryModal(false)}
         issues={issuesHistory}
+        lang={lang}
       />
     </View>
   );
@@ -495,78 +558,194 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0b10',
   },
-  topbar: {
+
+  // 1. Institutional Top Bar
+  institutionalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 54 : 36,
-    paddingBottom: 14,
-    backgroundColor: '#161822',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 52 : 12,
+    paddingBottom: 12,
+    backgroundColor: '#11131c',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  omDropLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  nabhBadgeLogo: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  brandTextGroup: {
+    marginLeft: 4,
+  },
+  brandTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.4,
+  },
+  brandSubtitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ef4444',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 1,
+  },
+  brandLocation: {
+    fontSize: 9.5,
+    color: '#94a3b8',
+  },
+
+  topRightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  vDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  harbingerLogoImg: {
+    height: 22,
+    width: 80,
+  },
+  logoutBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+  },
+  logoutText: {
+    color: '#f87171',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Language Selector Capsule
+  langToggleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    padding: 2,
+  },
+  langBtn: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  langBtnActive: {
+    backgroundColor: '#dc2626',
+  },
+  langBtnText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  langBtnTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+
+  // 2. Driver Sub-Bar
+  driverSubBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    backgroundColor: '#161822',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   driverProfile: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
     elevation: 3,
   },
   avatarText: {
     color: 'white',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '800',
   },
   driverName: {
     color: '#f8fafc',
-    fontSize: 15,
+    fontSize: 13.5,
     fontWeight: '700',
   },
   socketIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
+    gap: 5,
+    marginTop: 1,
   },
   dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  socketText: {
+    color: '#94a3b8',
+    fontSize: 10.5,
+    fontWeight: '500',
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  statusDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
   },
-  socketText: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '500',
+  statusPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
-  logoutBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  logoutText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+
+  // Scroll Body
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 24,
     gap: 14,
   },
+
+  // Shift Control Card
   shiftCard: {
     backgroundColor: '#161822',
     borderRadius: 16,
@@ -582,27 +761,8 @@ const styles = StyleSheet.create({
   },
   shiftCardTitle: {
     color: '#f8fafc',
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
   shiftButtonsRow: {
     flexDirection: 'row',
@@ -614,8 +774,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 6,
   },
   shiftBtnActive: {
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
@@ -629,9 +791,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(107, 114, 128, 0.15)',
     borderColor: '#6b7280',
   },
-  shiftBtnEmoji: {
-    fontSize: 20,
-    marginBottom: 4,
+  indicatorCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
   },
   shiftBtnLabel: {
     fontSize: 12,
@@ -642,6 +806,8 @@ const styles = StyleSheet.create({
     color: '#34d399',
     fontWeight: '700',
   },
+
+  // Telemetry HUD Card
   hudCard: {
     backgroundColor: '#161822',
     borderRadius: 16,
@@ -649,139 +815,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  hudTitle: {
-    color: '#f8fafc',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  hudGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  hudTile: {
-    flex: 1,
-    backgroundColor: '#0f111a',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  tileLabel: {
-    color: '#64748b',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  speedValue: {
-    color: '#38bdf8',
-    fontSize: 32,
-    fontWeight: '800',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  headingValue: {
-    color: '#a78bfa',
-    fontSize: 32,
-    fontWeight: '800',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  unitText: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  routeBox: {
-    backgroundColor: '#0f111a',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    marginBottom: 10,
-  },
-  coordsText: {
-    color: '#34d399',
-    fontSize: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    fontWeight: '600',
-  },
-  addressText: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 4,
-  },
-  metaLabel: {
-    color: '#64748b',
-    fontSize: 11,
-  },
-  simulatorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#161822',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
-  },
-  simulatorTitle: {
-    color: '#c7d2fe',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  simulatorSub: {
-    color: '#94a3b8',
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  actionsContainer: {
-    gap: 10,
-    marginTop: 6,
-  },
-  emergencyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ef4444',
-    borderRadius: 14,
-    paddingVertical: 15,
-    shadowColor: '#ef4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  emergencyBtnText: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  historyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#161822',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 14,
-    paddingVertical: 13,
-  },
-  historyBtnText: {
-    color: '#cbd5e1',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   hudHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  hudTitle: {
+    color: '#f8fafc',
+    fontSize: 13.5,
+    fontWeight: '700',
   },
   gpsBadge: {
     flexDirection: 'row',
@@ -825,6 +868,71 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+
+  hudGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  hudTile: {
+    flex: 1,
+    backgroundColor: '#0f111a',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  tileLabel: {
+    color: '#64748b',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  speedValue: {
+    color: '#38bdf8',
+    fontSize: 30,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  headingValue: {
+    color: '#a78bfa',
+    fontSize: 30,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  unitText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  routeBox: {
+    backgroundColor: '#0f111a',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 10,
+  },
+  routeBoxHeaderLabel: {
+    color: '#818cf8',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  coordsText: {
+    color: '#34d399',
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  addressText: {
+    color: '#cbd5e1',
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
   liveTag: {
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     borderColor: '#10b981',
@@ -839,16 +947,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
   },
+
   refreshGpsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#b91c1c',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 10,
-    shadowColor: '#4f46e5',
+    shadowColor: '#b91c1c',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -859,5 +968,77 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-});
 
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+  },
+  metaLabel: {
+    color: '#64748b',
+    fontSize: 11,
+  },
+
+  // Action Buttons
+  actionsContainer: {
+    gap: 10,
+    marginTop: 6,
+  },
+  emergencyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dc2626',
+    borderRadius: 14,
+    paddingVertical: 14,
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+    gap: 8,
+  },
+  emergencyIconDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+  },
+  emergencyBtnText: {
+    color: 'white',
+    fontSize: 14.5,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+
+  historyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#161822',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 14,
+    paddingVertical: 12,
+  },
+  historyBtnText: {
+    color: '#cbd5e1',
+    fontSize: 13.5,
+    fontWeight: '600',
+  },
+
+  // Global Footer
+  footerWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  footerText: {
+    color: '#64748b',
+    fontSize: 11,
+    textAlign: 'center',
+  },
+});

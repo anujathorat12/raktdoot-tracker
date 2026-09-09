@@ -2,6 +2,10 @@
 const issuesService = require('./issues.service');
 const { getIO } = require('../../sockets/socket.handler');
 
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+
 function getAllIssues(req, res, next) {
   try {
     const { status, limit } = req.query;
@@ -23,14 +27,42 @@ function getIssueById(req, res, next) {
 
 function createIssue(req, res, next) {
   try {
-    const { description, lat, lng } = req.body;
+    const { description, lat, lng, type, severity, address, image_base64 } = req.body;
     if (!description) {
       return res.status(400).json({ success: false, message: 'description is required.' });
     }
     const driver_id = req.user.id;
-    const image_path = req.file ? `/uploads/${req.file.filename}` : null;
+    let image_path = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const issue = issuesService.createIssue({ driver_id, description, image_path, lat, lng });
+    // Handle direct base64 image payload from web/mobile camera capture
+    if (!image_path && image_base64 && typeof image_base64 === 'string') {
+      try {
+        const matches = image_base64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const ext = matches[1].includes('png') ? '.png' : matches[1].includes('webp') ? '.webp' : '.jpg';
+          const filename = `issue_${uuidv4()}${ext}`;
+          const uploadDir = path.resolve(process.env.UPLOAD_DIR || './uploads');
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          fs.writeFileSync(path.join(uploadDir, filename), Buffer.from(matches[2], 'base64'));
+          image_path = `/uploads/${filename}`;
+        }
+      } catch (uploadErr) {
+        console.warn('[Issue Upload] Base64 decoding failed:', uploadErr.message);
+      }
+    }
+
+    const issue = issuesService.createIssue({
+      driver_id,
+      description,
+      image_path,
+      lat: lat ? parseFloat(lat) : null,
+      lng: lng ? parseFloat(lng) : null,
+      type: type || 'vehicle_breakdown',
+      severity: severity || 'medium',
+      address: address || null,
+    });
 
     // Broadcast real-time alert to manager/admin clients
     try {

@@ -228,7 +228,7 @@ export default function UserManagementTable() {
                   <tr key={u.id} id={`user-row-${u.id}`}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className="user-avatar" style={{ background: u.avatar_color || '#6366f1', width: 34, height: 34, fontSize: 12, borderRadius: 8, flexShrink: 0 }}>{initials}</div>
+                        <div className="user-avatar" style={{ background: u.avatar_color || '#b91c1c', width: 34, height: 34, fontSize: 12, borderRadius: 8, flexShrink: 0 }}>{initials}</div>
                         <div>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{u.name}</div>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.email}</div>

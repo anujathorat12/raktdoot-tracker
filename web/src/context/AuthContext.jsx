@@ -4,16 +4,36 @@ import api from '../services/api';
 const AuthContext = createContext(null);
 
 const DEMO_ACCOUNTS = [
-  { label: 'Admin', email: 'admin@delivery.com', password: 'admin123', role: 'admin' },
   { label: 'Manager', email: 'manager@delivery.com', password: 'manager123', role: 'manager' },
-  { label: 'Driver 1', email: 'driver1@delivery.com', password: 'driver123', role: 'driver' },
+  { label: 'Admin', email: 'admin@delivery.com', password: 'admin123', role: 'admin' },
 ];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('delivery_user')); } catch { return null; }
+    try {
+      const u = JSON.parse(localStorage.getItem('delivery_user'));
+      if (u && (u.role === 'admin' || u.role === 'manager')) {
+        return u;
+      }
+      // If previous session was a driver or invalid, clear it
+      localStorage.removeItem('delivery_user');
+      localStorage.removeItem('delivery_token');
+      return null;
+    } catch {
+      return null;
+    }
   });
-  const [token, setToken] = useState(() => localStorage.getItem('delivery_token'));
+  const [token, setToken] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('delivery_user'));
+      if (u && (u.role === 'admin' || u.role === 'manager')) {
+        return localStorage.getItem('delivery_token');
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,13 +43,23 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       const { token: t, user: u } = data.data;
+
+      // Web portal is strictly restricted to Manager and Admin roles only
+      if (u.role !== 'admin' && u.role !== 'manager') {
+        const restrictedMsg = 'Access denied: Only Managers and Administrators can sign in to the web portal. Drivers must use the Driver Mobile App.';
+        setError(restrictedMsg);
+        throw new Error(restrictedMsg);
+      }
+
       localStorage.setItem('delivery_token', t);
       localStorage.setItem('delivery_user', JSON.stringify(u));
       setToken(t);
       setUser(u);
       return u;
     } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed. Check credentials.';
+      const msg = (err.message && err.message.startsWith('Access denied'))
+        ? err.message
+        : (err.response?.data?.message || 'Login failed. Check credentials.');
       setError(msg);
       throw new Error(msg);
     } finally {

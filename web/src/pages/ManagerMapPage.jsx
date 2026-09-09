@@ -1,36 +1,75 @@
 import { useState, useEffect } from 'react';
-import { Map as MapIcon, Smartphone, Download } from 'lucide-react';
+import { Map as MapIcon, PanelLeftClose, PanelLeft, Smartphone, Download } from 'lucide-react';
 import FleetMap from '../components/map/FleetMap';
 import DriverList from '../components/manager/DriverList';
 import DriverDetailsDrawer from '../components/manager/DriverDetailsDrawer';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageToggle from '../components/common/LanguageToggle';
+import harbingerLogo from '../assets/harbinger_logo_actual.png';
 
 export default function ManagerMapPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [selectedDriverId, setSelectedDriverId] = useState(null);
+  const [showDriverList, setShowDriverList] = useState(true);
   const { fleetDriversList } = useSocket();
-
-  // If driver logs in, auto-target their own vehicle
-  useEffect(() => {
-    if (user?.role === 'driver' && !selectedDriverId) {
-      setSelectedDriverId(user.id);
-    }
-  }, [user]);
 
   return (
     <div className="page-content-full">
-      {/* Topbar */}
-      <div className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <MapIcon size={16} style={{ color: 'var(--color-primary)' }} />
-          <div>
-            <div className="topbar-title">Fleet Map</div>
-            <div className="topbar-subtitle">Real-time GPS tracking · {fleetDriversList.length} drivers</div>
+      {/* Streamlined, elegant Topbar */}
+      <div className="topbar" style={{ padding: '10px 20px', minHeight: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Toggle Fleet List Button */}
+          <button
+            onClick={() => setShowDriverList(prev => !prev)}
+            className="btn btn-ghost btn-icon btn-sm"
+            title={showDriverList ? "Collapse Fleet Panel" : "Show Fleet Panel"}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--border-default)',
+              color: showDriverList ? 'var(--color-primary-light)' : 'var(--text-muted)',
+            }}
+          >
+            {showDriverList ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+          </button>
+
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: 'var(--color-primary-glow)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid rgba(220, 38, 38, 0.45)',
+            flexShrink: 0,
+          }}>
+            <MapIcon size={16} style={{ color: 'var(--color-primary-light)' }} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="topbar-title" style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.2px' }}>
+              {t.liveBloodTransportTracking}
+            </div>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              color: '#34d399',
+              fontSize: 11,
+              fontWeight: 700,
+              padding: '2px 9px',
+              borderRadius: 12,
+              letterSpacing: '0.3px',
+            }}>
+              <span className="badge-dot pulse" style={{ background: '#10b981', width: 6, height: 6 }} />
+              {t.liveDispatchBadge}
+            </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Right side: Driver App Link, Download ZIP, Language Toggle & Corporate Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <a
             href="https://raktdoot-backend.onrender.com/driver"
             target="_blank"
@@ -49,7 +88,7 @@ export default function ManagerMapPage() {
               fontSize: '12px',
               fontWeight: 600,
             }}
-            title="Open Driver Mobile App on this device or phone"
+            title="Open Driver Mobile App on Phone"
           >
             <Smartphone size={14} />
             <span>Driver App (Phone)</span>
@@ -71,19 +110,42 @@ export default function ManagerMapPage() {
               fontSize: '12px',
               fontWeight: 500,
             }}
-            title="Download Driver App Source & Files (ZIP)"
+            title="Download Driver App Source ZIP"
           >
             <Download size={14} />
             <span>Download ZIP</span>
           </a>
+
+          <div style={{ height: 20, width: 1, background: 'var(--border-default)' }} />
+
+          <LanguageToggle />
+
+          <div style={{ height: 20, width: 1, background: 'var(--border-default)' }} />
+
+          <img
+            src={harbingerLogo}
+            alt="Harbinger Group"
+            style={{ height: 24, objectFit: 'contain', opacity: 0.9 }}
+            title="Harbinger Group"
+          />
         </div>
       </div>
 
       {/* Map + Driver list split */}
-      <div className="map-panel-split" style={{ flex: 1 }}>
-        <DriverList selectedId={selectedDriverId} onSelect={setSelectedDriverId} />
-        <div className="map-panel-map">
-          <FleetMap selectedDriverId={selectedDriverId} onSelectDriver={setSelectedDriverId} />
+      <div className="map-panel-split" style={{ flex: 1, minHeight: 0 }}>
+        {showDriverList && (
+          <DriverList
+            selectedId={selectedDriverId}
+            onSelect={setSelectedDriverId}
+            onClose={() => setShowDriverList(false)}
+          />
+        )}
+        <div className="map-panel-map" style={{ flex: 1, minWidth: 0, width: '100%', height: '100%', position: 'relative' }}>
+          <FleetMap
+            selectedDriverId={selectedDriverId}
+            onSelectDriver={setSelectedDriverId}
+            isListCollapsed={!showDriverList}
+          />
         </div>
       </div>
 

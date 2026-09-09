@@ -44,7 +44,7 @@ export default function DriverDetailsDrawer({ driverId, onClose }) {
       <aside className="drawer">
         {/* Header */}
         <div style={{ padding: 'var(--space-5)', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div className="user-avatar" style={{ background: d.avatar_color || '#6366f1', width: 48, height: 48, fontSize: 16, borderRadius: 12 }}>
+          <div className="user-avatar" style={{ background: d.avatar_color || '#b91c1c', width: 48, height: 48, fontSize: 16, borderRadius: 12 }}>
             {initials}
           </div>
           <div style={{ flex: 1 }}>
@@ -102,10 +102,32 @@ export default function DriverDetailsDrawer({ driverId, onClose }) {
                   {detail.issues.slice(0, 5).map(issue => (
                     <div key={issue.id} style={{ background: 'var(--bg-overlay)', borderRadius: 8, padding: 'var(--space-3)', border: '1px solid var(--border-subtle)', display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start' }}>
                       <AlertTriangle size={12} style={{ color: issue.status === 'open' ? 'var(--color-danger)' : 'var(--color-success)', flexShrink: 0, marginTop: 2 }} />
-                      <div>
-                        <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>{issue.description}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
+                          {issue.type && (
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', textTransform: 'capitalize' }}>
+                              {issue.type.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                          {issue.severity && (
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', textTransform: 'uppercase' }}>
+                              {issue.severity}
+                            </span>
+                          )}
+                          {issue.image_path && (
+                            <span style={{ fontSize: 9, fontWeight: 600, color: '#38bdf8' }}>
+                              📷 Photo
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-primary)', wordBreak: 'break-word' }}>{issue.description}</div>
+                        {issue.address && (
+                          <div style={{ fontSize: 11, color: '#34d399', marginTop: 2 }} numberOfLines={1}>
+                            📍 {issue.address}
+                          </div>
+                        )}
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                          {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })} · <span style={{ color: issue.status === 'open' ? 'var(--color-danger)' : 'var(--color-success)' }}>{issue.status}</span>
+                          {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })} · <span style={{ color: issue.status === 'open' ? 'var(--color-danger)' : 'var(--color-success)', fontWeight: 600 }}>{issue.status}</span>
                         </div>
                       </div>
                     </div>
