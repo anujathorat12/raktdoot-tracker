@@ -297,6 +297,14 @@ export default function FleetMap({ selectedDriverId, onSelectDriver, isListColla
     }
   }, [mapInstance, onSelectDriver, validDrivers]);
 
+  // Handler for selecting a driver from the on-map search bar
+  const handleSelectPerson = useCallback((driverId) => {
+    onSelectDriver?.(driverId);
+    if (driverId) {
+      focusOnDriver(driverId, 16);
+    }
+  }, [onSelectDriver, focusOnDriver]);
+
   // Quick action: center on active driver
   const handleFocusActive = useCallback(() => {
     if (activeDrivers.length > 0) {

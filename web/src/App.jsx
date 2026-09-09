@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { LanguageProvider } from './context/LanguageContext';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './pages/LoginPage';
 import ManagerMapPage from './pages/ManagerMapPage';
@@ -35,8 +36,6 @@ function AppRoutes() {
     </HashRouter>
   );
 }
-
-import { LanguageProvider } from './context/LanguageContext';
 
 export default function App() {
   return (

@@ -83,7 +83,7 @@ export default function LoginPage() {
             {t.heroLine1}
             <span className="highlight-red"> {t.heroLine2}</span>
           </h2>
-          <p className="hero-subtitle">{t.subtitle}</p>
+          <p className="hero-subtitle">{t.loginSubtitle || t.subtitle}</p>
 
           {/* 4 Feature Cards */}
           <div className="feature-cards-grid">
