@@ -27,6 +27,11 @@ function initDB() {
     db.run(stmt);
   }
 
+  // Safe schema migrations for issues table
+  try { db.run('ALTER TABLE issues ADD COLUMN type TEXT DEFAULT "vehicle_breakdown"'); } catch (_) {}
+  try { db.run('ALTER TABLE issues ADD COLUMN severity TEXT DEFAULT "medium"'); } catch (_) {}
+  try { db.run('ALTER TABLE issues ADD COLUMN address TEXT'); } catch (_) {}
+
   console.log(`[DB] SQLite (WASM) initialized at: ${DB_PATH}`);
   return db;
 }

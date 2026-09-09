@@ -2,15 +2,16 @@ import { Platform } from 'react-native';
 
 // Default backend URL based on platform
 export const DEFAULT_SERVER_URL = Platform.select({
-  android: 'http://10.0.2.2:5000', // Standard Android emulator loopback to host
-  ios: 'http://localhost:5000',
+  android: 'http://10.60.1.53:5000',
+  ios: 'http://10.60.1.53:5000',
   default: 'http://localhost:5000',
 });
 
 export const PRESET_SERVER_URLS = [
+  { label: 'Local PC Wi-Fi (10.60.1.53)', url: 'http://10.60.1.53:5000' },
   { label: 'Localhost (5000)', url: 'http://localhost:5000' },
+  { label: 'Hotspot Gateway (192.168.137.1)', url: 'http://192.168.137.1:5000' },
   { label: 'Android Emulator (10.0.2.2)', url: 'http://10.0.2.2:5000' },
-  { label: 'Wi-Fi Network (10.60.1.53)', url: 'http://10.60.1.53:5000' },
 ];
 
 export const DEMO_CREDENTIALS = {

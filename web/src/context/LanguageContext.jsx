@@ -1,0 +1,237 @@
+import { createContext, useContext, useState } from 'react';
+
+const translations = {
+  en: {
+    // Brand & Header
+    centreTitle: 'Jankalyan Blood Centre, Pune',
+    tag: 'RAKTDOOT TRACKER',
+    puneLocation: 'Pune, Maharashtra',
+    liveConnected: 'Live Connected',
+    disconnected: 'Disconnected',
+    harbingerPartner: 'Harbinger Group',
+
+    // Sidebar Nav & Section Labels
+    dispatchOps: 'Dispatch Operations',
+    liveVehicleTracking: 'Live Vehicle Tracking',
+    issuesFeed: 'Issues Feed',
+    administration: 'Administration',
+    userManagement: 'User Management',
+    telemetry: 'Telemetry',
+    system: 'System',
+    settings: 'Settings',
+    signOut: 'Sign out',
+
+    // Statuses
+    active: 'Active',
+    idle: 'Idle',
+    issue: 'Issue',
+    offline: 'Offline',
+    all: 'All',
+
+    // Manager Map Page
+    liveBloodTransportTracking: 'Live Blood Transport Tracking',
+    liveDispatchBadge: 'LIVE DISPATCH',
+    mapSubtitle: 'Real-time cold-chain blood transport & vehicle GPS telemetry',
+    bloodDeliveryVehicles: 'Blood Delivery Vehicles',
+    live: 'Live',
+    searchDriverPlaceholder: 'Search delivery vehicle or driver...',
+    focusActiveVehicle: 'Focus Active Vehicle',
+    viewAllVehicles: 'View All Vehicles',
+    searchMapPlaceholder: 'Search vehicle, driver or location...',
+    totalVehiclesTooltip: 'Total transport vehicles on system',
+    exactLocation: 'Exact Physical Location',
+    speed: 'Speed',
+    heading: 'Heading',
+    coordinates: 'Coordinates',
+
+    // Manager Issues Page
+    issuesTitle: 'Emergency Issues Feed',
+    issuesSubtitle: 'Real-time cold chain incidents, vehicle breakdowns, and route delays',
+    openIssues: 'Open Issues',
+    resolvedIssues: 'Resolved',
+    resolveBtn: 'Resolve Issue',
+    issueResolvedBanner: 'Issue resolved successfully',
+    priorityHigh: 'High Priority',
+    priorityMedium: 'Medium Priority',
+    priorityLow: 'Low Priority',
+
+    // Admin Users Page
+    userMgmtTitle: 'User Management',
+    userMgmtSubtitle: 'Manage drivers, managers, and admin accounts',
+    createUserBtn: 'Create User',
+    editUserBtn: 'Edit User',
+    fullName: 'Full Name',
+    email: 'Email',
+    phone: 'Phone',
+    role: 'Role',
+    status: 'Status',
+    actions: 'Actions',
+
+    // Admin Telemetry Page
+    telemetryTitle: 'System Telemetry',
+    telemetrySubtitle: 'Live server health & vehicle telemetry statistics',
+    transportOpsSection: 'Transport & Dispatch Operations',
+    socketClients: 'Socket Clients',
+    activeVehicles: 'Active Vehicles',
+    systemHealthSection: 'System Health',
+    uptime: 'Uptime',
+    totalUsers: 'Total Users',
+    locationUpdates: 'Location Updates',
+    memoryUsage: 'Memory Usage',
+    refresh: 'Refresh',
+
+    // Settings Page
+    settingsTitle: 'Settings',
+    languageSetting: 'Language / भाषा निवडा',
+    backendUrl: 'Backend URL',
+
+    // Login Page translations
+    heroLine1: 'Safe Blood Supply &',
+    heroLine2: 'Real-Time Blood Transport Tracking',
+    loginSubtitle: 'Advanced digital platform for real-time monitoring of cold-chain blood transport and emergency hospital delivery across Pune.',
+    helpline: '24x7 Helpline: 020-24449527, 020-24444502',
+    signInTitle: 'Sign In',
+    signInSub: 'Enter your credentials to access RAKTDOOT TRACKER Portal',
+    emailLabel: 'EMAIL ADDRESS / USER ID',
+    passwordLabel: 'PASSWORD',
+    submitBtn: 'Sign In',
+    quickDemo: 'Quick Demo Login',
+    cards: [
+      { title: 'Live GPS Tracking', desc: 'Accurate vehicle location & ETA updates' },
+      { title: 'Cold-Chain Monitoring', desc: '+2°C to +6°C temperature control' },
+      { title: '24x7 Emergency Response', desc: 'Zero-delay emergency blood delivery' },
+      { title: 'NABH Quality Standard', desc: 'Accredited quality & patient safety' },
+    ],
+  },
+  mr: {
+    // Brand & Header
+    centreTitle: 'जनकल्याण रक्तपेढी, पुणे',
+    tag: 'रक्तदूत (RAKTDOOT TRACKER)',
+    puneLocation: 'पुणे, महाराष्ट्र',
+    liveConnected: 'लाईव्ह कनेक्टेड',
+    disconnected: 'डिस्कनेक्टेड',
+    harbingerPartner: 'हार्बिंजर ग्रुप (Harbinger Group)',
+
+    // Sidebar Nav & Section Labels
+    dispatchOps: 'प्रेषण ऑपरेशन्स (Dispatch Operations)',
+    liveVehicleTracking: 'लाईव्ह वाहन ट्रॅकिंग (Vehicle Tracking)',
+    issuesFeed: 'समस्या व अलर्ट्स (Issues Feed)',
+    administration: 'प्रशासन (Administration)',
+    userManagement: 'वापरकर्ता व्यवस्थापन (Users)',
+    telemetry: 'सिस्टम टेलीमेट्री (Telemetry)',
+    system: 'प्रणाली (System)',
+    settings: 'सेटिंग्ज (Settings)',
+    signOut: 'बाहेर पडा (Sign Out)',
+
+    // Statuses
+    active: 'सक्रिय (Active)',
+    idle: 'प्रतीक्षेत (Idle)',
+    issue: 'समस्या (Issue)',
+    offline: 'ऑफलाईन (Offline)',
+    all: 'सर्व (All)',
+
+    // Manager Map Page
+    liveBloodTransportTracking: 'लाईव्ह रक्त वहन ट्रॅकिंग (Live Tracking)',
+    liveDispatchBadge: 'लाईव्ह प्रेषण',
+    mapSubtitle: 'कोल्ड-चेन रक्त वहन व वाहन GPS टेलिमेट्री रिअल-टाईम मॉनिटरिंग',
+    bloodDeliveryVehicles: 'रक्त वितरण वाहने',
+    live: 'लाईव्ह',
+    searchDriverPlaceholder: 'वाहन क्रमांक किंवा चालक शोधा...',
+    focusActiveVehicle: 'सक्रिय वाहनावर लक्ष केंद्रित करा',
+    viewAllVehicles: 'सर्व वाहने पहा',
+    searchMapPlaceholder: 'वाहन, चालक किंवा ठिकाण शोधा...',
+    totalVehiclesTooltip: 'सिस्टमवर एकूण नोंदणीकृत वाहने',
+    exactLocation: 'अचूक सध्याचे ठिकाण',
+    speed: 'वेग (Speed)',
+    heading: 'दिशा (Heading)',
+    coordinates: 'अक्षांश / रेखांश',
+
+    // Manager Issues Page
+    issuesTitle: 'आणीबाणी समस्या व अलर्ट्स',
+    issuesSubtitle: 'कोल्ड चेन तापमान अडचण, वाहन बिघाड व वाहतूक कोंडी अलर्ट्स',
+    openIssues: 'सक्रिय समस्या',
+    resolvedIssues: 'निवारण झाले',
+    resolveBtn: 'समस्या निवारण करा',
+    issueResolvedBanner: 'समस्येचे यशस्वीरीत्या निवारण करण्यात आले',
+    priorityHigh: 'अति महत्वाचे (High)',
+    priorityMedium: 'मध्यम (Medium)',
+    priorityLow: 'कमी (Low)',
+
+    // Admin Users Page
+    userMgmtTitle: 'वापरकर्ता व्यवस्थापन',
+    userMgmtSubtitle: 'चालक, व्यवस्थापक आणि प्रशासक खाती व्यवस्थापित करा',
+    createUserBtn: 'नवीन वापरकर्ता जोडा',
+    editUserBtn: 'वापरकर्ता संपादित करा',
+    fullName: 'पूर्ण नाव',
+    email: 'ईमेल',
+    phone: 'फोन',
+    role: 'भूमिका (Role)',
+    status: 'स्थिती (Status)',
+    actions: 'क्रिया',
+
+    // Admin Telemetry Page
+    telemetryTitle: 'प्रणाली टेलीमेट्री व आकडेवारी',
+    telemetrySubtitle: 'लाईव्ह सर्व्हर आरोग्य व वाहन टेलिमेट्री आकडेवारी',
+    transportOpsSection: 'वहन व प्रेषण ऑपरेशन्स',
+    socketClients: 'सॉकेट कनेक्शन्स',
+    activeVehicles: 'सक्रिय वाहने',
+    systemHealthSection: 'सर्व्हर आरोग्य व कार्यक्षमता',
+    uptime: 'अप-टाईम (Uptime)',
+    totalUsers: 'एकूण वापरकर्ते',
+    locationUpdates: 'स्थान अद्यतने (Location Updates)',
+    memoryUsage: 'मेमरी वापर',
+    refresh: 'रिफ्रेश करा',
+
+    // Settings Page
+    settingsTitle: 'सेटिंग्ज (Settings)',
+    languageSetting: 'भाषा निवडा / Select Language',
+    backendUrl: 'बॅकएंड URL',
+
+    // Login Page translations
+    heroLine1: 'सुरक्षित रक्त पुरवठा व',
+    heroLine2: 'रियल-टाईम रक्त वहन ट्रॅकिंग',
+    loginSubtitle: 'जनकल्याण रक्तपेढी, पुणे अंतर्गत आणीबाणीच्या प्रसंगी हॉस्पिटल व रुग्णांपर्यंत जलद, तापमान-नियंत्रित व सुरक्षित रक्त पिशव्या पोहोचवण्याची अद्ययावत डिजिटल प्रणाली.',
+    helpline: '२४x७ आणीबाणी हेल्पलाइन: 020-24449527, 020-24444502',
+    signInTitle: 'प्रवेश करा (Sign In)',
+    signInSub: 'रक्तदूत ट्रॅकिंग पोर्टल वापरण्यासाठी तुमची माहिती प्रविष्ट करा',
+    emailLabel: 'ईमेल पत्ता / वापरकर्ता आयडी',
+    passwordLabel: 'संकेतशब्द (पासवर्ड)',
+    submitBtn: 'प्रवेश करा (Sign In)',
+    quickDemo: 'जलद प्रात्यक्षिक प्रवेश (Quick Demo)',
+    cards: [
+      { title: 'लाईव्ह GPS ट्रॅकिंग', desc: 'वाहनांचे अचूक लाईव्ह लोकेशन व ETA ट्रॅकिंग' },
+      { title: 'कोल्ड-चेन मॉनिटरिंग', desc: '+२°C ते +६°C सुरक्षित तापमान नियंत्रण' },
+      { title: '२४x७ आणीबाणी पुरवठा', desc: 'शून्य विलंबाने आणीबाणी रक्त पुरवठा' },
+      { title: 'NABH मान्यताप्राप्त', desc: 'रुग्ण सुरक्षा व गुणवत्ता मानकांचे पालन' },
+    ],
+  },
+};
+
+const LanguageContext = createContext(null);
+
+export function LanguageProvider({ children }) {
+  const [lang, setLangState] = useState(() => {
+    return localStorage.getItem('app_lang') || 'en';
+  });
+
+  const setLang = (newLang) => {
+    setLangState(newLang);
+    localStorage.setItem('app_lang', newLang);
+  };
+
+  const t = translations[lang] || translations.en;
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t, translations }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return ctx;
+}

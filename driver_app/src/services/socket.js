@@ -59,6 +59,22 @@ class DriverSocketManager {
     return true;
   }
 
+  emitIssueAlert(issue) {
+    return this.emitIssueReported(issue);
+  }
+
+  on(event, callback) {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+  }
+
+  off(event, callback) {
+    if (this.socket) {
+      this.socket.off(event, callback);
+    }
+  }
+
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();

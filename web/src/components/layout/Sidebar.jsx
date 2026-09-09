@@ -6,21 +6,15 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
-const managerNav = [
-  { to: '/manager/map', icon: Map, label: 'Fleet Map' },
-  { to: '/manager/issues', icon: AlertTriangle, label: 'Issues Feed' },
-];
-
-const adminNav = [
-  { to: '/admin/users', icon: Users, label: 'User Management' },
-  { to: '/admin/telemetry', icon: BarChart3, label: 'Telemetry' },
-];
+import omBloodDropIcon from '../../assets/om_blood_drop.svg';
+import nabhBadgeIcon from '../../assets/nabh_accredited_badge_real.png';
+import { useLanguage } from '../../context/LanguageContext';
 
 function NavItem({ to, icon: Icon, label, badge }) {
   return (
     <NavLink
       to={to}
-      id={`nav-${label.toLowerCase().replace(/\s+/g, '-')}`}
+      id={`nav-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
       className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
     >
       <Icon size={16} className="nav-icon" />
@@ -33,7 +27,18 @@ function NavItem({ to, icon: Icon, label, badge }) {
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const { connected, issues } = useSocket();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
+
+  const managerNav = [
+    { to: '/manager/map', icon: Map, label: t.liveVehicleTracking },
+    { to: '/manager/issues', icon: AlertTriangle, label: t.issuesFeed },
+  ];
+
+  const adminNav = [
+    { to: '/admin/users', icon: Users, label: t.userManagement },
+    { to: '/admin/telemetry', icon: BarChart3, label: t.telemetry },
+  ];
 
   const openIssues = issues.filter(i => i.status === 'open').length;
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
@@ -42,12 +47,36 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">🚚</div>
-        <div>
-          <div className="sidebar-logo-text">RAKTDOOT TRACKER</div>
-          <div className="sidebar-logo-sub">Fleet Management</div>
+      {/* Brand Header with Jankalyan & NABH Logos */}
+      <div className="sidebar-logo" style={{
+        padding: '16px 14px',
+        borderBottom: '1px solid var(--border-subtle)',
+        background: 'linear-gradient(180deg, rgba(220, 38, 38, 0.12) 0%, transparent 100%)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <img
+              src={omBloodDropIcon}
+              alt="Jankalyan Blood Centre"
+              style={{ width: 34, height: 34, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(220, 38, 38, 0.6))' }}
+            />
+            <img
+              src={nabhBadgeIcon}
+              alt="NABH Accredited"
+              style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: '50%' }}
+            />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', letterSpacing: '0.3px', lineHeight: 1.2 }}>
+              RAKTDOOT TRACKER
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>
+              Jankalyan Blood Centre
+            </div>
+            <div style={{ fontSize: 9.5, color: 'var(--text-muted)' }}>
+              Pune, Maharashtra
+            </div>
+          </div>
         </div>
       </div>
 
@@ -55,7 +84,7 @@ export default function Sidebar() {
       <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: connected ? 'var(--color-success)' : 'var(--color-danger)' }}>
           {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-          <span style={{ fontWeight: 600 }}>{connected ? 'Live Connected' : 'Disconnected'}</span>
+          <span style={{ fontWeight: 600 }}>{connected ? t.liveConnected : t.disconnected}</span>
           {connected && <span className="badge-dot pulse" style={{ marginLeft: 'auto' }} />}
         </div>
       </div>
@@ -64,30 +93,30 @@ export default function Sidebar() {
       <nav className="sidebar-nav">
         {isManagerOrAdmin && (
           <>
-            <div className="nav-section-label">Fleet Operations</div>
+            <div className="nav-section-label">{t.dispatchOps}</div>
             {managerNav.map(n => (
-              <NavItem key={n.to} {...n} badge={n.label === 'Issues Feed' ? openIssues : 0} />
+              <NavItem key={n.to} {...n} badge={n.to === '/manager/issues' ? openIssues : 0} />
             ))}
           </>
         )}
 
         {isAdmin && (
           <>
-            <div className="nav-section-label" style={{ marginTop: 'var(--space-3)' }}>Administration</div>
+            <div className="nav-section-label" style={{ marginTop: 'var(--space-3)' }}>{t.administration}</div>
             {adminNav.map(n => <NavItem key={n.to} {...n} />)}
           </>
         )}
 
         <div style={{ marginTop: 'var(--space-3)' }}>
-          <div className="nav-section-label">System</div>
-          <NavItem to="/settings" icon={Settings} label="Settings" />
+          <div className="nav-section-label">{t.system}</div>
+          <NavItem to="/settings" icon={Settings} label={t.settings} />
         </div>
       </nav>
 
       {/* User footer */}
       <div className="sidebar-footer">
         <div className="user-card">
-          <div className="user-avatar" style={{ background: user?.avatar_color || '#6366f1' }}>
+          <div className="user-avatar" style={{ background: user?.avatar_color || '#b91c1c' }}>
             {initials}
           </div>
           <div className="user-info">
@@ -98,7 +127,7 @@ export default function Sidebar() {
             id="btn-logout"
             className="btn btn-ghost btn-icon btn-sm"
             onClick={logout}
-            title="Sign out"
+            title={t.signOut}
           >
             <LogOut size={14} />
           </button>

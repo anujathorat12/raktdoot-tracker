@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Activity, Users, Truck, AlertTriangle, Database, Wifi, RefreshCw, Cpu, MemoryStick } from 'lucide-react';
 import api from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 function MetricCard({ icon: Icon, label, value, sub, color = 'var(--color-primary)' }) {
   return (
@@ -33,6 +34,7 @@ function formatBytes(bytes) {
 
 export default function TelemetryStats() {
   const { connected } = useSocket();
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -83,27 +85,27 @@ export default function TelemetryStats() {
           </div>
         </div>
         <button id="btn-refresh-telemetry" className="btn btn-secondary btn-sm" onClick={fetchStats}>
-          <RefreshCw size={13} /> Refresh
+          <RefreshCw size={13} /> {t.refresh}
         </button>
       </div>
 
       {/* Primary metrics */}
       <div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'var(--space-3)' }}>Fleet & Operations</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'var(--space-3)' }}>{t.transportOpsSection}</div>
         <div className="telemetry-grid">
-          <MetricCard icon={Wifi} label="Socket Clients" value={stats.sockets} sub="Live connections" color="var(--color-accent)" />
-          <MetricCard icon={Truck} label="Active Drivers" value={stats.activeDrivers} sub={`of ${stats.totalDrivers} total`} color="var(--color-success)" />
-          <MetricCard icon={AlertTriangle} label="Open Issues" value={stats.openIssues} sub={`${stats.resolvedIssues} resolved`} color={stats.openIssues > 0 ? 'var(--color-danger)' : 'var(--color-success)'} />
+          <MetricCard icon={Wifi} label={t.socketClients} value={stats.sockets} sub="Live connections" color="var(--color-accent)" />
+          <MetricCard icon={Truck} label={t.activeVehicles} value={stats.activeDrivers} sub={`of ${stats.totalDrivers} total`} color="var(--color-success)" />
+          <MetricCard icon={AlertTriangle} label={t.openIssues} value={stats.openIssues} sub={`${stats.resolvedIssues} resolved`} color={stats.openIssues > 0 ? 'var(--color-danger)' : 'var(--color-success)'} />
         </div>
       </div>
 
       {/* System metrics */}
       <div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'var(--space-3)' }}>System Health</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'var(--space-3)' }}>{t.systemHealthSection}</div>
         <div className="telemetry-grid">
-          <MetricCard icon={Activity} label="Uptime" value={formatUptime(stats.uptime)} sub="Server running" color="var(--color-primary-light)" />
-          <MetricCard icon={Users} label="Total Users" value={stats.totalUsers} sub={`${stats.totalDrivers} drivers`} color="var(--color-primary)" />
-          <MetricCard icon={Database} label="Location Updates" value={stats.totalLocationUpdates.toLocaleString()} sub="Historical records" color="var(--color-warning)" />
+          <MetricCard icon={Activity} label={t.uptime} value={formatUptime(stats.uptime)} sub="Server running" color="var(--color-primary-light)" />
+          <MetricCard icon={Users} label={t.totalUsers} value={stats.totalUsers} sub={`${stats.totalDrivers} drivers`} color="var(--color-primary)" />
+          <MetricCard icon={Database} label={t.locationUpdates} value={stats.totalLocationUpdates.toLocaleString()} sub="Historical records" color="var(--color-warning)" />
         </div>
       </div>
 
@@ -113,7 +115,7 @@ export default function TelemetryStats() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Cpu size={14} style={{ color: 'var(--color-accent)' }} />
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Memory Usage</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{t.memoryUsage}</span>
             </div>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>
               {heapUsedMb} MB / {heapTotalMb} MB

@@ -35,12 +35,16 @@ function AppRoutes() {
   );
 }
 
+import { LanguageProvider } from './context/LanguageContext';
+
 export default function App() {
   return (
-    <AuthProvider>
-      <SocketProvider>
-        <AppRoutes />
-      </SocketProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <SocketProvider>
+          <AppRoutes />
+        </SocketProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

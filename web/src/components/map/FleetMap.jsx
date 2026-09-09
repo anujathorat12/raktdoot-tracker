@@ -3,7 +3,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useSocket } from '../../context/SocketContext';
-import MapPersonSearch from './MapPersonSearch';
+import { useLanguage } from '../../context/LanguageContext';
+import { Maximize2, Crosshair, X } from 'lucide-react';
 
 // Fix default leaflet icon paths
 delete L.Icon.Default.prototype._getIconUrl;
@@ -32,7 +33,7 @@ function createVehicleIcon(driver, isSelected) {
   const emoji = STATUS_EMOJI[driver.status] || '🚚';
   const pulse = driver.status === 'issue' ? 'animation: pulse-marker 1.5s ease infinite;' : '';
   const glow = isSelected
-    ? `box-shadow: 0 0 0 4px rgba(99,102,241,0.7), 0 0 24px rgba(99,102,241,0.5); transform: scale(1.15);`
+    ? `box-shadow: 0 0 0 4px rgba(185,28,28,0.7), 0 0 24px rgba(185,28,28,0.5); transform: scale(1.15);`
     : `box-shadow: 0 2px 10px rgba(0,0,0,0.5);`;
 
   // Dynamic radar rings
@@ -42,14 +43,14 @@ function createVehicleIcon(driver, isSelected) {
 
   // Target ping for selected person
   const targetRing = isSelected
-    ? `<div style="position:absolute;inset:-14px;border-radius:50%;border:3px dashed #818cf8;animation:target-ping 1.6s cubic-bezier(0,0,0.2,1) infinite;pointer-events:none;"></div>`
+    ? `<div style="position:absolute;inset:-14px;border-radius:50%;border:3px dashed #ef4444;animation:target-ping 1.6s cubic-bezier(0,0,0.2,1) infinite;pointer-events:none;"></div>`
     : '';
 
   // Floating person name badge when focused/selected
   const nameBadge = isSelected
     ? `<div style="
         position:absolute;top:-30px;left:50%;transform:translateX(-50%);
-        background:linear-gradient(135deg, #4f46e5, #7c3aed);
+        background:linear-gradient(135deg, #7f1d1d, #b91c1c);
         color:white;font-weight:700;font-size:11px;padding:3px 10px;
         border-radius:14px;white-space:nowrap;
         box-shadow:0 4px 16px rgba(0,0,0,0.5);
@@ -109,8 +110,59 @@ function MapInstanceBridge({ onMapReady }) {
   return null;
 }
 
+// Automatically triggers map.invalidateSize() whenever container size changes or panel toggles
+function MapResizer({ isListCollapsed }) {
+  const map = useMap();
+
+  // Invalidate when collapse toggle state changes
+  useEffect(() => {
+    if (!map) return;
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 50);
+    const t2 = setTimeout(() => map.invalidateSize(), 150);
+    const t3 = setTimeout(() => map.invalidateSize(), 350);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [isListCollapsed, map]);
+
+  // Continuous ResizeObserver for any layout or window dimension changes
+  useEffect(() => {
+    if (!map) return;
+
+    map.invalidateSize();
+    const container = map.getContainer();
+    if (!container) return;
+
+    let rafId;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        map.invalidateSize({ pan: false });
+      });
+    });
+
+    ro.observe(container);
+
+    const onResize = () => {
+      map.invalidateSize({ pan: false });
+    };
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      ro.disconnect();
+      window.removeEventListener('resize', onResize);
+    };
+  }, [map]);
+
+  return null;
+}
+
 // Auto-fit bounds on first load or auto-focus active driver
-function BoundsController({ drivers, selectedId, onActiveDriverFound }) {
+function BoundsController({ drivers, selectedId, isListCollapsed }) {
   const map = useMap();
   const fitted = useRef(false);
   const lastActiveDriverId = useRef(null);
@@ -123,13 +175,14 @@ function BoundsController({ drivers, selectedId, onActiveDriverFound }) {
 
     // 1. Initial Load: center on active driver if exists, else fit all drivers
     if (!fitted.current && !selectedId) {
+      map.invalidateSize();
       if (activeDrivers.length > 0) {
         const topDriver = activeDrivers[0];
         map.flyTo([topDriver.lat, topDriver.lng], 15, { animate: true, duration: 1.0 });
         lastActiveDriverId.current = topDriver.id;
       } else {
         const bounds = L.latLngBounds(validDrivers.map(d => [d.lat, d.lng]));
-        map.fitBounds(bounds.pad(0.2), { animate: true });
+        map.fitBounds(bounds.pad(0.15), { animate: true });
       }
       fitted.current = true;
     } else if (!selectedId && activeDrivers.length > 0) {
@@ -142,16 +195,31 @@ function BoundsController({ drivers, selectedId, onActiveDriverFound }) {
     }
   }, [drivers, selectedId, map]);
 
+  // When panel collapse state changes, re-fit bounds smoothly if no single driver is focused
+  useEffect(() => {
+    const validDrivers = drivers.filter(d => d.lat && d.lng && (d.lat !== 0 || d.lng !== 0));
+    if (!selectedId && validDrivers.length > 0 && map && fitted.current) {
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+        const bounds = L.latLngBounds(validDrivers.map(d => [d.lat, d.lng]));
+        map.fitBounds(bounds.pad(0.15), { animate: true });
+      }, 180);
+      return () => clearTimeout(timer);
+    }
+  }, [isListCollapsed, selectedId, map, drivers]);
+
   return null;
 }
 
-export default function FleetMap({ selectedDriverId, onSelectDriver }) {
+export default function FleetMap({ selectedDriverId, onSelectDriver, isListCollapsed = false }) {
   const { fleetDriversList } = useSocket();
+  const { t } = useLanguage();
   const [mapInstance, setMapInstance] = useState(null);
   const markerRefs = useRef({});
 
   const validDrivers = fleetDriversList.filter(d => d.lat && d.lng && (d.lat !== 0 || d.lng !== 0));
   const activeDrivers = validDrivers.filter(d => d.status === 'active' || d.status === 'issue');
+  const selectedDriver = fleetDriversList.find(d => d.id === selectedDriverId);
 
   const lastFocusedIdRef = useRef(null);
 
@@ -199,20 +267,13 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
     }
   }, [selectedDriverId, fleetDriversList, mapInstance]);
 
-  // Handle selecting a person from the search overlay
-  const handleSelectPerson = useCallback((person) => {
-    onSelectDriver?.(person.id);
-    if (person.lat && person.lng && (person.lat !== 0 || person.lng !== 0)) {
-      focusOnDriver(person.id, 16);
-    }
-  }, [onSelectDriver, focusOnDriver]);
-
   // Reset map view to fit all fleet drivers
   const handleResetView = useCallback(() => {
     onSelectDriver?.(null);
     if (mapInstance && validDrivers.length > 0) {
+      mapInstance.invalidateSize();
       const bounds = L.latLngBounds(validDrivers.map(d => [d.lat, d.lng]));
-      mapInstance.fitBounds(bounds.pad(0.2), { animate: true, duration: 0.9 });
+      mapInstance.fitBounds(bounds.pad(0.15), { animate: true, duration: 0.9 });
     }
   }, [mapInstance, onSelectDriver, validDrivers]);
 
@@ -241,7 +302,15 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
           0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5), 0 2px 10px rgba(0,0,0,0.5); }
           50% { box-shadow: 0 0 0 12px rgba(239,68,68,0), 0 2px 10px rgba(0,0,0,0.5); }
         }
-        .leaflet-container { background: #1a1c23; }
+        .leaflet-container {
+          width: 100% !important;
+          height: 100% !important;
+          background: #1a1c23;
+        }
+        .leaflet-tile-pane {
+          width: 100%;
+          height: 100%;
+        }
         .leaflet-tile { filter: brightness(0.7) contrast(1.1) saturate(0.8); }
         .leaflet-popup-content-wrapper {
           background: #16181f; border: 1px solid rgba(255,255,255,0.12);
@@ -251,73 +320,74 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
         .leaflet-popup-close-button { color: #94a3b8 !important; }
       `}</style>
 
-      {/* Floating On-Map Search Bar */}
-      <MapPersonSearch
-        drivers={fleetDriversList}
-        selectedDriverId={selectedDriverId}
-        onSelectPerson={handleSelectPerson}
-        onResetView={handleResetView}
-      />
-
-      {/* Live Active Driver Floating Alert Chip */}
-      {activeDrivers.length > 0 && (
+      {/* Selected Vehicle Floating Focus Pill (Top-Left, minimal & sleek) */}
+      {selectedDriver && (
         <div style={{
-          position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 1000, display: 'flex', alignItems: 'center', gap: 8,
+          position: 'absolute', top: 14, left: 14, zIndex: 1000,
+          display: 'flex', alignItems: 'center', gap: 8,
           background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 24,
-          padding: '6px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(220, 38, 38, 0.45)', borderRadius: 20,
+          padding: '5px 12px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
         }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-          <span style={{ fontSize: 12, color: '#f8fafc', fontWeight: 600 }}>
-            Active Driver: <span style={{ color: '#34d399' }}>{activeDrivers[0].name}</span>
-            {activeDrivers[0].address ? ` · ${activeDrivers[0].address.slice(0, 28)}...` : ''}
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: STATUS_COLORS[selectedDriver.status] || '#b91c1c' }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#f8fafc' }}>
+            {selectedDriver.name}
+            {selectedDriver.speed > 0 ? ` · ${Math.round(selectedDriver.speed)} km/h` : ''}
           </span>
           <button
-            onClick={() => {
-              onSelectDriver?.(activeDrivers[0].id);
-              focusOnDriver(activeDrivers[0].id, 16);
-            }}
+            onClick={() => onSelectDriver?.(null)}
             style={{
-              background: '#4f46e5', border: 'none', borderRadius: 12,
-              color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 10px',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+              background: 'none', border: 'none', color: 'var(--text-muted)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 2,
+              marginLeft: 2,
             }}
+            title="Clear selection"
           >
-            🎯 Focus
+            <X size={13} />
           </button>
         </div>
       )}
 
-      {/* Floating Map Action Quick-Controls (Bottom-Left) */}
+      {/* Sleek Floating Map Controls (Top-Right) */}
       <div style={{
-        position: 'absolute', bottom: 20, left: 20, zIndex: 1000,
-        display: 'flex', gap: 8,
+        position: 'absolute', top: 14, right: 14, zIndex: 1000,
+        display: 'flex', alignItems: 'center', gap: 6,
       }}>
         {activeDrivers.length > 0 && (
           <button
             onClick={handleFocusActive}
+            title={t.focusActiveVehicle}
             style={{
-              background: '#10b981', border: 'none', borderRadius: 10,
-              color: '#042f1a', fontSize: 12, fontWeight: 700, padding: '8px 14px',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(15, 23, 42, 0.88)', backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 8,
+              color: '#34d399', fontSize: 11.5, fontWeight: 600, padding: '6px 11px',
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)', cursor: 'pointer',
+              transition: 'all 0.15s ease',
             }}
           >
-            🎯 Center Active Driver
+            <Crosshair size={13} />
+            <span>{t.focusActiveVehicle}</span>
           </button>
         )}
+
         <button
           onClick={handleResetView}
+          title={t.viewAllVehicles}
           style={{
-            background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: 10,
-            color: '#cbd5e1', fontSize: 12, fontWeight: 600, padding: '8px 14px',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(15, 23, 42, 0.88)', backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 8,
+            color: '#e2e8f0', fontSize: 11.5, fontWeight: 600, padding: '6px 11px',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)', cursor: 'pointer',
+            transition: 'all 0.15s ease',
           }}
         >
-          🌐 Fit All Fleet
+          <Maximize2 size={13} style={{ color: 'var(--color-primary-light)' }} />
+          <span>{t.viewAllVehicles}</span>
         </button>
       </div>
 
@@ -333,7 +403,8 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
         />
 
         <MapInstanceBridge onMapReady={setMapInstance} />
-        <BoundsController drivers={validDrivers} selectedId={selectedDriverId} />
+        <MapResizer isListCollapsed={isListCollapsed} />
+        <BoundsController drivers={validDrivers} selectedId={selectedDriverId} isListCollapsed={isListCollapsed} />
 
         {validDrivers.map(driver => (
           <Marker
@@ -355,7 +426,7 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                   <div style={{
                     width: 38, height: 38, borderRadius: 10,
-                    background: driver.avatar_color || '#6366f1',
+                    background: driver.avatar_color || '#b91c1c',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 14, fontWeight: 700, color: 'white',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
@@ -394,7 +465,7 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
                     borderRadius: 6,
                     border: '1px solid rgba(255,255,255,0.1)',
                   }}>
-                    <div style={{ fontSize: 10, color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>
+                    <div style={{ fontSize: 10, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>
                       📍 Exact Physical Location
                     </div>
                     <div style={{ fontSize: 11, color: '#f8fafc', lineHeight: 1.3 }}>
@@ -410,7 +481,7 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
                     color: '#94a3b8', fontSize: 11, display: 'flex', alignItems: 'center', gap: 6,
                   }}>
                     <span>📞</span>
-                    <a href={`tel:${driver.phone}`} style={{ color: '#818cf8', textDecoration: 'none' }}>
+                    <a href={`tel:${driver.phone}`} style={{ color: '#f87171', textDecoration: 'none' }}>
                       {driver.phone}
                     </a>
                   </div>
@@ -420,29 +491,6 @@ export default function FleetMap({ selectedDriverId, onSelectDriver }) {
           </Marker>
         ))}
       </MapContainer>
-
-      {/* Map overlay stats (top-right) */}
-      <div style={{
-        position: 'absolute', top: 14, right: 14, zIndex: 1000,
-        display: 'flex', flexDirection: 'column', gap: 6,
-      }}>
-        {['active', 'idle', 'issue', 'offline'].map(status => {
-          const count = fleetDriversList.filter(d => d.status === status).length;
-          if (count === 0) return null;
-          return (
-            <div key={status} style={{
-              background: 'rgba(15,17,26,0.85)', backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
-              padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: 12, fontWeight: 600, color: STATUS_COLORS[status],
-              boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-            }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[status], display: 'inline-block' }} />
-              {count} {status}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

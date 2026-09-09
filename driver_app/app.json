@@ -18,6 +18,7 @@
     },
     "android": {
       "package": "com.harbinger.raktdoot.driver",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0a0b10",
         "foregroundImage": "./assets/android-icon-foreground.png"
@@ -32,6 +33,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a70f1140-6f84-455d-b995-d0226d073e3b"
+      }
     }
   }
 }

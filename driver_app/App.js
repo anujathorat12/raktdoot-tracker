@@ -81,7 +81,7 @@ export default function App() {
   if (loading) {
     return (
       <View style={styles.splash}>
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color="#b91c1c" />
         <StatusBar style="light" />
       </View>
     );
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryBtn: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#b91c1c',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,

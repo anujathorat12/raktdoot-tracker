@@ -10,58 +10,16 @@ import {
   Mail, Lock, Eye, EyeOff, Zap, Phone
 } from 'lucide-react';
 
-const translations = {
-  en: {
-    centreTitle: 'Jankalyan Blood Centre, Pune',
-    tag: 'RAKTDOOT TRACKER',
-    heroLine1: 'Safe Blood Supply &',
-    heroLine2: 'Real-Time Fleet Tracking',
-    subtitle: 'Advanced digital platform for real-time monitoring of cold-chain blood transport and emergency hospital delivery across Pune.',
-    cards: [
-      { title: 'Live GPS Tracking', desc: 'Accurate vehicle location & ETA updates' },
-      { title: 'Cold-Chain Monitoring', desc: '+2°C to +6°C temperature control' },
-      { title: '24x7 Emergency Response', desc: 'Zero-delay emergency blood delivery' },
-      { title: 'NABH Quality Standard', desc: 'Accredited quality & patient safety' },
-    ],
-    helpline: '24x7 Helpline: 020-24449527, 020-24444502',
-    signInTitle: 'Sign In',
-    signInSub: 'Enter your credentials to access RAKTDOOT TRACKER Portal',
-    emailLabel: 'EMAIL ADDRESS / USER ID',
-    passwordLabel: 'PASSWORD',
-    submitBtn: 'Sign In',
-    quickDemo: 'Quick Demo Login',
-  },
-  mr: {
-    centreTitle: 'जनकल्याण रक्तपेढी, पुणे',
-    tag: 'रक्तदूत (RAKTDOOT TRACKER)',
-    heroLine1: 'सुरक्षित रक्त पुरवठा व',
-    heroLine2: 'रियल-टाईम व्हईकल ट्रॅकिंग',
-    subtitle: 'जनकल्याण रक्तपेढी, पुणे अंतर्गत आणीबाणीच्या प्रसंगी हॉस्पिटल व रुग्णांपर्यंत जलद, तापमान-नियंत्रित व सुरक्षित रक्त पिशव्या पोहोचवण्याची अद्ययावत डिजिटल प्रणाली.',
-    cards: [
-      { title: 'लाईव्ह GPS ट्रॅकिंग', desc: 'वाहनांचे अचूक लाईव्ह लोकेशन व ETA ट्रॅकिंग' },
-      { title: 'कोल्ड-चेन मॉनिटरिंग', desc: '+२°C ते +६°C सुरक्षित तापमान नियंत्रण' },
-      { title: '२४x७ आणीबाणी पुरवठा', desc: 'शून्य विलंबाने आणीबाणी रक्त पुरवठा' },
-      { title: 'NABH मान्यताप्राप्त', desc: 'रुग्ण सुरक्षा व गुणवत्ता मानकांचे पालन' },
-    ],
-    helpline: '२४x७ आणीबाणी हेल्पलाइन: 020-24449527, 020-24444502',
-    signInTitle: 'प्रवेश करा (Sign In)',
-    signInSub: 'रक्तदूत ट्रॅकिंग पोर्टल वापरण्यासाठी तुमची माहिती प्रविष्ट करा',
-    emailLabel: 'ईमेल पत्ता / वापरकर्ता आयडी',
-    passwordLabel: 'संकेतशब्द (पासवर्ड)',
-    submitBtn: 'प्रवेश करा (Sign In)',
-    quickDemo: 'जलद प्रात्यक्षिक प्रवेश (Quick Demo)',
-  }
-};
+import { useLanguage } from '../context/LanguageContext';
+import LanguageToggle from '../components/common/LanguageToggle';
 
 export default function LoginPage() {
   const { user, login, loading, error, clearError } = useAuth();
-  const [lang, setLang] = useState('en');
+  const { lang, t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [localErr, setLocalErr] = useState('');
-
-  const t = translations[lang];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -175,22 +133,7 @@ export default function LoginPage() {
         {/* Right Sign In Form Card */}
         <section className="brand-signin-section">
           {/* Language Selector — sits right above the card */}
-          <div className="lang-selector signin-lang-selector">
-            <button
-              type="button"
-              className={`lang-btn ${lang === 'mr' ? 'active' : ''}`}
-              onClick={() => setLang('mr')}
-            >
-              मराठी
-            </button>
-            <button
-              type="button"
-              className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
-              onClick={() => setLang('en')}
-            >
-              English
-            </button>
-          </div>
+          <LanguageToggle className="signin-lang-selector" />
           <div className="brand-signin-card">
             <h2 className="signin-title">{t.signInTitle}</h2>
             <p className="signin-subtitle">{t.signInSub}</p>
